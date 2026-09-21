@@ -26,7 +26,7 @@ dependencies:
   flutter_svg: ^2.2.3
   uni_links: ^0.5.1
   google_fonts: ^6.2.1
-  intl: ^0.20.2
+  intl: ^0.20.3
   local_data:
     git:
       url: https://gitlab+deploy-token-4:4zjU2bJymy7c6vTztanf@gitlab.probasegroup.com/flutter_packages/local_data.git
