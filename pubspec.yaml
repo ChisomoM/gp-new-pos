@@ -39,7 +39,7 @@ dependencies:
     path: packages/permission_client
   services_repo:
     path: packages/services_repo
-  shimmer: ^3.0.0
+  shimmer: ^4.0.0
   url_launcher: ^6.3.2
   webview_flutter: ^4.13.0
 
