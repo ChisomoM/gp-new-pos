@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/main/view/main_page.dart';
-import 'package:c_template_app/utils/deep_link_service.dart';
+import 'package:geepay_pos/main/view/main_page.dart';
+import 'package:geepay_pos/utils/deep_link_service.dart';
 
 class App extends StatelessWidget {
   const App({

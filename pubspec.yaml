@@ -1,4 +1,4 @@
-name: c_template_app
+name: geepay_pos
 description: A Flutter template app with clean architecture using BLoC,
   repositories, and common features like authentication and theming.
 version: 1.0.0+1

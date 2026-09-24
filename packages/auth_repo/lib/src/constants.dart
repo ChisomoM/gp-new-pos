@@ -8,6 +8,7 @@ class AuthConstants {
   static const String keyLoggedIn = 'logged_in';
   static const String keyAppId = 'app_id';
   static const String keyDeviceId = 'device_id';
+  static const String keyDeviceRegistered = 'device_registered';
   static const String keyTheme = 'theme';
 
   static const String tblUsers = 'users';

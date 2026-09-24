@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:c_template_app/main/cubit/main_cubit.dart';
-import 'package:c_template_app/home/view/home_page.dart';
+import 'package:geepay_pos/main/cubit/main_cubit.dart';
+import 'package:geepay_pos/home/view/home_page.dart';
 
 /// {@template main_body}
 /// Body of the MainPage.

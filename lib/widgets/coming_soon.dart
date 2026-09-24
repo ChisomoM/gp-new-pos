@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:c_template_app/utils/app_icons.dart';
+import 'package:geepay_pos/utils/app_icons.dart';
 
 class ComingSoon extends StatelessWidget {
   const ComingSoon({

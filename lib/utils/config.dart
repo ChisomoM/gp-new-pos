@@ -1,4 +1,4 @@
-import 'package:c_template_app/utils/database_scripts.dart';
+import 'package:geepay_pos/utils/database_scripts.dart';
 
 enum AppEnv { development, staging, production }
 
@@ -20,10 +20,10 @@ class Config {
 
   /// Creates a dev config
   factory Config.dev() => Config(
-    baseUrl: 'http://155.138.220.54:3000/api/',
+    baseUrl: 'https://prod.gateway.mygeepay.com/api/',
     // socketUrl: 'ws://155.138.220.54/api_socket/websocket?vsn=2.0.0',
-    host: '155.138.220.54',
-    dbName: 'tariff.comparator.dev.db',
+    host: 'prod.gateway.mygeepay.com',
+    dbName: 'geepay.pos.dev.db',
     initScript: initialScript,
     migrations: migrationScript,
   );
@@ -31,10 +31,10 @@ class Config {
   /// Creates a staging config
   factory Config.staging() => Config(
     environment: AppEnv.staging,
-    baseUrl: 'http://155.138.220.54:3000/api/',
+    baseUrl: 'https://prod.gateway.mygeepay.com/api/',
     // socketUrl: 'ws://155.138.220.54/api_socket/websocket?vsn=2.0.0',
-    host: '155.138.220.54',
-    dbName: 'tariff.comparator.stg.db',
+    host: 'prod.gateway.mygeepay.com',
+    dbName: 'geepay.pos.stg.db',
     initScript: initialScript,
     migrations: migrationScript,
   );
@@ -42,10 +42,10 @@ class Config {
   /// Creates a production config
   factory Config.prod() => Config(
     environment: AppEnv.production,
-    baseUrl: 'http://155.138.220.54:3000/api/',
+    baseUrl: 'https://prod.gateway.mygeepay.com/api/',
     // socketUrl: 'ws://155.138.220.54/api_socket/websocket?vsn=2.0.0',
-    host: '155.138.220.54',
-    dbName: 'tariff.comparator.db',
+    host: 'prod.gateway.mygeepay.com',
+    dbName: 'geepay.pos.db',
     initScript: initialScript,
     migrations: migrationScript,
   );

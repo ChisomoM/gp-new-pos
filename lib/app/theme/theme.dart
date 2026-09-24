@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:c_template_app/app/theme/theme.dart';
-import 'package:c_template_app/utils/utils.dart';
+import 'package:geepay_pos/app/theme/theme.dart';
+import 'package:geepay_pos/utils/utils.dart';
 
 export 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/app/theme/theme.dart';
+import 'package:geepay_pos/app/theme/theme.dart';
 
 enum ButtonType { filled, elevated, outlined, text }
 

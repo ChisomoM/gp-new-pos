@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/splash/cubit/cubit.dart';
-import 'package:c_template_app/splash/widgets/splash_body.dart';
+import 'package:geepay_pos/splash/cubit/cubit.dart';
+import 'package:geepay_pos/splash/widgets/splash_body.dart';
 
 class SplashPage extends StatelessWidget {
   const SplashPage({super.key});

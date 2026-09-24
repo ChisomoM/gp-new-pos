@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:c_template_app/utils/enums.dart';
+import 'package:geepay_pos/utils/enums.dart';
 part 'main_state.dart';
 
 class MainCubit extends Cubit<MainState> {

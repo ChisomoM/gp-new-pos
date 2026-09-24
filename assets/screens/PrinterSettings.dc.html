@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printer settings</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700;800&display=swap">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#f9fafb;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+.gp-scroll::-webkit-scrollbar{display:none;}
+.gp-num{font-family:'DM Sans',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;background:#f9fafb;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:18px 16px;background:#ffffff;border-bottom:1px solid #f3f4f6;">
+    <a href="Settings.dc.html" aria-label="Back" style="width:34px;height:34px;border-radius:10px;background:#f7f8fa;display:flex;align-items:center;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#272f4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </a>
+    <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;color:#141a34;">Printer settings</div>
+  </div>
+
+  <div class="gp-scroll" style="flex:1;overflow-y:auto;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:22px;">
+
+    <div>
+      <div style="font-size:11.5px;font-weight:700;color:#9aa0b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Print mode</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #383d92;border-radius:14px;background:#ececf8;text-align:left;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#ffffff;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#383d92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+          </span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#141644;">Built-in printer</div>
+            <div style="font-size:11.5px;color:#3d4560;margin-top:1px;">Uses the device's internal thermal printer</div>
+          </div>
+          <span style="width:20px;height:20px;border-radius:50%;background:#383d92;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+        </button>
+        <button style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #eef0f5;border-radius:14px;background:#ffffff;text-align:left;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#f7f8fa;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#70788f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+          </span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#272f4a;">Bluetooth printer</div>
+            <div style="font-size:11.5px;color:#9aa0b8;margin-top:1px;">Connect a paired external receipt printer</div>
+          </div>
+          <span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #dde0eb;flex:0 0 auto;"></span>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:11.5px;font-weight:700;color:#9aa0b8;text-transform:uppercase;letter-spacing:0.05em;">Bluetooth devices</div>
+        <button style="font-size:12px;font-weight:600;color:#383d92;background:none;border:none;padding:0;">Scan</button>
+      </div>
+      <div style="background:#ffffff;border:1px solid #eef0f5;border-radius:16px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f3f4f6;">
+          <span style="width:34px;height:34px;border-radius:50%;background:#ececf8;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#383d92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          </span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:600;color:#141a34;">GP Thermal PT-58</div>
+            <div style="font-size:11.5px;color:#9aa0b8;margin-top:1px;">Paired · 00:1A:7D:DA:71</div>
+          </div>
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:0.03em;color:#065f46;background:#d1fae5;border-radius:999px;padding:3px 9px;">CONNECTED</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;">
+          <span style="width:34px;height:34px;border-radius:50%;background:#f7f8fa;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa0b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          </span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:600;color:#141a34;">MPT-II Printer</div>
+            <div style="font-size:11.5px;color:#9aa0b8;margin-top:1px;">Available</div>
+          </div>
+          <button style="font-size:12px;font-weight:600;color:#383d92;background:none;border:none;padding:0;">Connect</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="flex:0 0 auto;padding:14px 20px 22px;background:#ffffff;border-top:1px solid #f3f4f6;">
+    <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border:none;border-radius:12px;background:linear-gradient(115deg,#383d92 0%,#2b6fc2 48%,#00afeb 100%);color:#ffffff;font-size:15px;font-weight:600;box-shadow:0 4px 16px rgba(0,175,235,0.30),0 1px 3px rgba(56,61,146,0.20);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Run test print
+    </button>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

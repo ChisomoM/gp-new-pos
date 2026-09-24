@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:c_template_app/auth/auth.dart';
-import 'package:c_template_app/utils/utils.dart';
+import 'package:geepay_pos/auth/auth.dart';
+import 'package:geepay_pos/utils/utils.dart';
 
 void showInfoSnackBar(
   BuildContext context, {

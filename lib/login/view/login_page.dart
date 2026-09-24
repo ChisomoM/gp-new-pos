@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/login/cubit/cubit.dart';
-import 'package:c_template_app/login/widgets/login_body.dart';
+import 'package:geepay_pos/login/cubit/cubit.dart';
+import 'package:geepay_pos/login/widgets/login_body.dart';
 
 /// {@template login_page}
 /// A description for LoginPage

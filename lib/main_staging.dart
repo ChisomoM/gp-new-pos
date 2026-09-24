@@ -1,12 +1,12 @@
 import 'dart:developer';
 
-import 'package:c_template_app/app/app.dart';
-import 'package:c_template_app/auth/auth.dart';
-import 'package:c_template_app/bootstrap.dart';
-import 'package:c_template_app/firebase_config.dart';
-import 'package:c_template_app/utils/config.dart';
-import 'package:c_template_app/utils/deep_link_service.dart';
-import 'package:c_template_app/utils/utils.dart';
+import 'package:geepay_pos/app/app.dart';
+import 'package:geepay_pos/auth/auth.dart';
+import 'package:geepay_pos/bootstrap.dart';
+import 'package:geepay_pos/firebase_config.dart';
+import 'package:geepay_pos/utils/config.dart';
+import 'package:geepay_pos/utils/deep_link_service.dart';
+import 'package:geepay_pos/utils/utils.dart';
 import 'package:local_data/local_data.dart';
 import 'package:net_source/net_source.dart';
 import 'package:notifications_repo/notifications_repo.dart';

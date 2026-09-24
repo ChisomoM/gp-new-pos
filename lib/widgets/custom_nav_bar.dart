@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:c_template_app/utils/screen_size.dart';
+import 'package:geepay_pos/utils/screen_size.dart';
 
 class CustomBottomAppBar extends StatefulWidget {
   const CustomBottomAppBar({

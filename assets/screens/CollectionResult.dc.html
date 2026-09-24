@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collection result</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700;800&display=swap">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#f9fafb;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;}
+a{text-decoration:none;}
+.gp-num{font-family:'DM Sans',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;background:#f9fafb;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 16px;background:#ffffff;border-bottom:1px solid #f3f4f6;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="Dashboard.dc.html" aria-label="Close" style="width:34px;height:34px;border-radius:10px;background:#f7f8fa;display:flex;align-items:center;justify-content:center;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#272f4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </a>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;color:#141a34;">Result</div>
+    </div>
+    <div style="display:flex;gap:2px;background:#f0f1f5;border-radius:999px;padding:2px;">
+      <button onClick="{{setSuccess}}" style="{{tabSuccess}}">Success</button>
+      <button onClick="{{setFailed}}" style="{{tabFailed}}">Failed</button>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:32px 24px 16px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;">
+
+    <div style="width:84px;height:84px;border-radius:50%;background:{{iconBg}};display:flex;align-items:center;justify-content:center;">
+      <sc-if value="{{isSuccess}}" hint-placeholder-val="{{true}}">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+      </sc-if>
+      <sc-if value="{{isFailed}}" hint-placeholder-val="{{false}}">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+      </sc-if>
+    </div>
+
+    <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:21px;color:#141a34;margin-top:18px;">{{headline}}</div>
+    <div class="gp-num" style="font-size:30px;font-weight:700;color:#0c1040;margin-top:8px;">ZMW 50.00</div>
+    <div style="font-size:13.5px;color:#70788f;margin-top:6px;">from 073 042 237</div>
+    <div style="margin-top:10px;font-size:12.5px;font-weight:600;color:{{captionColor}};">{{caption}}</div>
+
+    <div style="width:100%;background:#ffffff;border:1px solid #eef0f5;border-radius:16px;margin-top:26px;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f3f4f6;">
+        <span style="font-size:13px;color:#70788f;">Transaction ID</span>
+        <span class="gp-num" style="font-size:13px;font-weight:600;color:#272f4a;">163229</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f3f4f6;">
+        <span style="font-size:13px;color:#70788f;">Transaction type</span>
+        <span style="font-size:13px;font-weight:600;color:#272f4a;">Mobile money collection</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;">
+        <span style="font-size:13px;color:#70788f;">Date</span>
+        <span style="font-size:13px;font-weight:600;color:#272f4a;">Sep 23, 2026, 10:20 PM</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="flex:0 0 auto;padding:14px 20px 22px;background:#ffffff;border-top:1px solid #f3f4f6;display:flex;flex-direction:column;gap:10px;">
+    <sc-if value="{{isFailed}}" hint-placeholder-val="{{false}}">
+      <a href="Collections.dc.html" style="display:block;width:100%;padding:15px;border-radius:12px;border:1.5px solid #dde0eb;color:#272f4a;font-size:14.5px;font-weight:600;text-align:center;box-sizing:border-box;">Try again</a>
+    </sc-if>
+    <a href="Dashboard.dc.html" style="display:block;width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(115deg,#383d92 0%,#2b6fc2 48%,#00afeb 100%);color:#ffffff;font-size:15px;font-weight:600;text-align:center;box-shadow:0 4px 16px rgba(0,175,235,0.30),0 1px 3px rgba(56,61,146,0.20);box-sizing:border-box;">Done</a>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  tabStyle(active) {
+    return 'border:none;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;' +
+      (active ? 'background:#ffffff;color:#1d1f58;box-shadow:0 1px 2px rgba(8,12,48,0.08);' : 'background:transparent;color:#70788f;');
+  }
+  renderVals() {
+    const status = this.state.status || 'success';
+    const isSuccess = status === 'success';
+    return {
+      tabSuccess: this.tabStyle(isSuccess),
+      tabFailed: this.tabStyle(!isSuccess),
+      setSuccess: () => this.setState({ status: 'success' }),
+      setFailed: () => this.setState({ status: 'failed' }),
+      isSuccess,
+      isFailed: !isSuccess,
+      iconBg: isSuccess ? '#d1fae5' : '#fee2e2',
+      headline: isSuccess ? 'Payment received' : 'Payment failed',
+      captionColor: isSuccess ? '#065f46' : '#991b1b',
+      caption: isSuccess ? 'Confirmed by the customer' : 'The customer did not approve in time'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:c_template_app/auth/auth.dart';
+import 'package:geepay_pos/auth/auth.dart';
 
 class AppVersion extends StatelessWidget {
   const AppVersion({

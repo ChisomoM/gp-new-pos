@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/utils/utils.dart';
-import 'package:c_template_app/widgets/pippy.dart';
+import 'package:geepay_pos/utils/utils.dart';
+import 'package:geepay_pos/widgets/pippy.dart';
 
 class ActionSheet extends StatelessWidget {
   const ActionSheet({

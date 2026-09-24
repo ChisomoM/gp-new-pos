@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:c_template_app/utils/utils.dart';
-import 'package:c_template_app/widgets/widgets.dart';
+import 'package:geepay_pos/utils/utils.dart';
+import 'package:geepay_pos/widgets/widgets.dart';
 
 final money = NumberFormat('#,##0.00');
 

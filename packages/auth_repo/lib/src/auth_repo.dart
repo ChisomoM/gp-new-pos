@@ -94,6 +94,13 @@ class AuthRepo {
   /// User Registration
   Future<OpStatus> signup(JsonMap body) => _authCore.signup(body);
 
+  /// Registers this physical device with `gp_pos_tms` (device setup).
+  Future<OpStatus> registerDevice(JsonMap body) =>
+      _authCore.registerDevice(body);
+
+  /// Whether this device has already completed registration.
+  Future<bool> isDeviceRegistered() => _authCore.isDeviceRegistered();
+
   /// Logs in the user with a Google account.
   Future<OpStatus> continueWithGoogle([String type = 'login']) =>
       _socialAuth.continueWithGoogle(type);

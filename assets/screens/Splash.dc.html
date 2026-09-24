@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Splash</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700;800&display=swap">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#080c30;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+@keyframes gpFade{0%,100%{opacity:0.35;}50%{opacity:1;}}
+.gp-dot{width:6px;height:6px;border-radius:50%;background:#ffffff;animation:gpFade 1.1s ease-in-out infinite;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;overflow:hidden;position:relative;background:linear-gradient(160deg,#080c30 0%,#131850 48%,#383d92 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+
+  <div style="position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(0,175,235,0.28) 0%,rgba(0,175,235,0) 70%);top:-120px;right:-100px;"></div>
+  <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,175,235,0.16) 0%,rgba(0,175,235,0) 70%);bottom:-100px;left:-80px;"></div>
+
+  <img src="/_blob/6229aad833fccbf60b93e997005b9e5a" alt="" aria-hidden="true" style="position: absolute; bottom: -231px; right: -169px; width: 625px; height: 701px; object-fit: contain; opacity: 0.08; filter: brightness(0) invert(1); z-index: 0; pointer-events: none">
+
+  <img src="/_blob/6229aad833fccbf60b93e997005b9e5a" alt="" aria-hidden="true" style="width: 56px; height: 56px; object-fit: contain; position: relative; z-index: 1; margin-bottom: 18px">
+
+  <img src="/_blob/35c3fb18d56fb1b4790c3482085fb9d5" alt="Geepay" style="width:170px;height:auto;position:relative;z-index:1;">
+
+  <div style="display:flex;gap:6px;margin-top:44px;position:relative;z-index:1;">
+    <span class="gp-dot" style="animation-delay:0s;"></span>
+    <span class="gp-dot" style="animation-delay:0.15s;"></span>
+    <span class="gp-dot" style="animation-delay:0.3s;"></span>
+  </div>
+
+  <div style="position:absolute;bottom:36px;font-size:11.5px;color:rgba(255,255,255,0.4);letter-spacing:0.02em;z-index:1;">Version 2.4.1</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/widgets/loader.dart';
+import 'package:geepay_pos/widgets/loader.dart';
 
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({

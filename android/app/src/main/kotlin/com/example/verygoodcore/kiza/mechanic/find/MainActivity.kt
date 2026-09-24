@@ -1,4 +1,4 @@
-package com.example.verygoodcore.c_template_app
+package com.example.verygoodcore.geepay_pos
 
 import io.flutter.embedding.android.FlutterActivity
 

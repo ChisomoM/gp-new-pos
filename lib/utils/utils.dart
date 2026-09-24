@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/utils/config.dart';
+import 'package:geepay_pos/utils/config.dart';
 
 export 'constants.dart';
 export 'default_widgets.dart';

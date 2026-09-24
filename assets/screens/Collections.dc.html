@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collections</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700;800&display=swap">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#f9fafb;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;}
+input{font-family:inherit;box-sizing:border-box;}
+input:focus{outline:none;border-color:#383d92 !important;box-shadow:0 0 0 3px rgba(56,61,146,0.14);}
+.gp-scroll::-webkit-scrollbar{display:none;}
+.gp-num{font-family:'DM Sans',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;background:#f9fafb;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:18px 16px;background:#ffffff;border-bottom:1px solid #f3f4f6;">
+    <a href="Dashboard.dc.html" aria-label="Back" style="width:34px;height:34px;border-radius:10px;background:#f7f8fa;display:flex;align-items:center;justify-content:center;text-decoration:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#272f4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+    </a>
+    <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;color:#141a34;">New collection</div>
+  </div>
+
+  <div class="gp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:22px;">
+
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#272f4a;margin-bottom:8px;">Customer phone number</label>
+      <div style="position:relative;">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa0b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </span>
+        <input type="tel" placeholder="e.g. 0973 042 237" style="width:100%;padding:14px 16px 14px 40px;border:1.5px solid #dde0eb;border-radius:12px;font-size:15px;color:#141a34;background:#ffffff;">
+      </div>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#272f4a;margin-bottom:8px;">Amount</label>
+      <div style="display:flex;align-items:center;border:1.5px solid #dde0eb;border-radius:12px;background:#ffffff;padding:14px 16px;gap:8px;">
+        <span class="gp-num" style="font-size:15px;font-weight:600;color:#70788f;">ZMW</span>
+        <span class="gp-num" style="font-size:22px;font-weight:700;color:{{amountColor}};">{{amountDisplay}}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px;">
+        <button onClick="{{pick20}}" style="{{chip20}}">K20</button>
+        <button onClick="{{pick50}}" style="{{chip50}}">K50</button>
+        <button onClick="{{pick100}}" style="{{chip100}}">K100</button>
+        <button onClick="{{pick200}}" style="{{chip200}}">K200</button>
+      </div>
+    </div>
+
+    <div style="background:#ececf8;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:12px;font-weight:600;color:#383d92;text-transform:uppercase;letter-spacing:0.04em;">You're requesting</div>
+      <div class="gp-num" style="font-size: 22px; font-weight: 700; color: #141644">ZMW {{amountDisplay}}</div>
+      <div style="font-size:13px;color:#3d4560;">Sent as a mobile money request</div>
+    </div>
+
+  </div>
+
+  <div style="flex:0 0 auto;padding:14px 20px 22px;background:#ffffff;border-top:1px solid #f3f4f6;">
+    <a href="CollectionStatus.dc.html" style="width:100%;box-sizing:border-box;padding:16px;border:none;border-radius:12px;background:linear-gradient(115deg,#383d92 0%,#2b6fc2 48%,#00afeb 100%);color:#ffffff;font-size:15px;font-weight:600;box-shadow:0 4px 16px rgba(0,175,235,0.30),0 1px 3px rgba(56,61,146,0.20);display:flex;align-items:center;justify-content:center;gap:8px;">
+      Request payment
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+    </a>
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa0b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      <span style="font-size:11.5px;color:#9aa0b8;">Payments are processed securely by Geepay</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  amtChip(active) {
+    return 'padding:9px 0;border-radius:10px;font-size:12.5px;font-weight:600;border:1.5px solid ' +
+      (active ? '#383d92;background:#ececf8;color:#141644;' : '#eef0f5;background:#ffffff;color:#3d4560;');
+  }
+  renderVals() {
+    const amount = this.state.amount || null;
+    return {
+      amountDisplay: amount ? amount + '.00' : '0.00',
+      amountColor: amount ? '#141a34' : '#c4c9d9',
+      chip20: this.amtChip(amount === 20),
+      chip50: this.amtChip(amount === 50),
+      chip100: this.amtChip(amount === 100),
+      chip200: this.amtChip(amount === 200),
+      pick20: () => this.setState({ amount: 20 }),
+      pick50: () => this.setState({ amount: 50 }),
+      pick100: () => this.setState({ amount: 100 }),
+      pick200: () => this.setState({ amount: 200 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:c_template_app/splash/cubit/splash_cubit.dart';
-import 'package:c_template_app/utils/app_icons.dart';
-import 'package:c_template_app/utils/reusable_animations.dart';
-import 'package:c_template_app/utils/screen_size.dart';
-// import 'package:c_template_app/splash/cubit/splash_cubit.dart';
-// import 'package:c_template_app/utils/app_icons.dart';
-// import 'package:c_template_app/utils/reusable_animations.dart';
-// import 'package:c_template_app/utils/screen_size.dart';
+import 'package:geepay_pos/splash/cubit/splash_cubit.dart';
+import 'package:geepay_pos/utils/app_icons.dart';
+import 'package:geepay_pos/utils/reusable_animations.dart';
+import 'package:geepay_pos/utils/screen_size.dart';
+// import 'package:geepay_pos/splash/cubit/splash_cubit.dart';
+// import 'package:geepay_pos/utils/app_icons.dart';
+// import 'package:geepay_pos/utils/reusable_animations.dart';
+// import 'package:geepay_pos/utils/screen_size.dart';
 
 class SplashBody extends StatelessWidget {
   const SplashBody({super.key});

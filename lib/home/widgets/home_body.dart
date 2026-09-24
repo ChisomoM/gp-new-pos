@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:c_template_app/home/cubit/cubit.dart';
+import 'package:geepay_pos/home/cubit/cubit.dart';
 
 /// {@template home_body}
 /// Body of the HomePage.

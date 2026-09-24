@@ -19,6 +19,7 @@ class AuthCore {
   static const String _keyId = AuthConstants.keyId;
   static const String _keyToken = AuthConstants.keyToken;
   static const String _keyLoggedIn = AuthConstants.keyLoggedIn;
+  static const String _keyDeviceRegistered = AuthConstants.keyDeviceRegistered;
   static const String _tblUsers = AuthConstants.tblUsers;
 
   Future<void> _initNetworkApi({String? token, String? refreshToken}) async {
@@ -52,7 +53,7 @@ class AuthCore {
   /// User Login
   Future<OpStatus> login(JsonMap body) async {
     try {
-      final response = await _net.post('login', body);
+      final response = await _net.post('auth/login', body);
       if (response.isSuccessful()) {
         await _getAndAuthUser(response);
       }
@@ -62,6 +63,29 @@ class AuthCore {
       _controller.add(AuthStatus.unauthenticated);
       return OpStatus.unexpected(e.toString());
     }
+  }
+
+  /// Registers this physical device against `gp_pos_tms` (POS terminal
+  /// management). This is unauthenticated and unrelated to user login/signup:
+  /// it returns only a `device_id`, never tokens or a user.
+  Future<OpStatus> registerDevice(JsonMap body) async {
+    try {
+      final response = await _net.post('v1/pos/register', body);
+      if (response.isSuccessful()) {
+        await _prefs.set(_keyDeviceRegistered, true);
+      }
+      return OpStatus.fromResponse(response);
+    } catch (e) {
+      log('Error in device registration: $e');
+      return OpStatus.unexpected(e.toString());
+    }
+  }
+
+  /// Whether this device has already completed registration with
+  /// `gp_pos_tms`.
+  Future<bool> isDeviceRegistered() async {
+    return await _prefs.getBool(_keyDeviceRegistered, defaultValue: false) ??
+        false;
   }
 
   /// Function to logout

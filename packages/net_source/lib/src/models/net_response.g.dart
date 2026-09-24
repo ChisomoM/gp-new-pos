@@ -10,4 +10,5 @@ NetResponse _$NetResponseFromJson(Map<String, dynamic> json) => NetResponse(
       status: json['status'] as int?,
       message: json['message'] as String,
       data: json['data'] as dynamic,
+      success: json['success'] as bool?,
     );

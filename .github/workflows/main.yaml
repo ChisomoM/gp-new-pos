@@ -1,4 +1,4 @@
-name: c_template_app
+name: geepay_pos
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
