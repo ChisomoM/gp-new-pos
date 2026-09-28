@@ -1,6 +1,6 @@
 # Geepay POS: UI/UX Polish Plan
 
-Status: phases 0 to 2 implemented (see §6). Phases 3 to 8 not started.
+Status: phases 0 to 2 and 7 implemented (see §6). Phases 3 to 6 and 8 not started.
 Scope: the Flutter app in `lib/` (visual layer only; no API or behavior changes unless called out).
 Companion to `geepay-pos-design-spec.md`, which defines brand tokens. This plan extends that spec into a full design system and a prioritised rollout.
 
@@ -418,7 +418,7 @@ Each phase is a separate PR, reviewable on its own. Earlier phases carry no scre
 | **4. Collection flow** | Core task | New collection, waiting, result (success moment). | M |
 | **5. History + Details** | High frequency | Grouping, filters, refresh, receipt layout. | M |
 | **6. Settings + Printer** | Utility screens | Token alignment, printer rebuild on components. | M |
-| **7. Auth + Splash + placeholders** | First impression | Field unification, CTA cleanup, splash motion. | S |
+| **7. Auth + Splash + placeholders** (done) | First impression | Field unification, CTA cleanup, splash motion. | S |
 | **8. Polish pass** | Whole app | On-device review at 360dp and a large POS screen, reduce-motion check, contrast check, haptics review, remove any remaining lint violations. | S |
 
 What shipped in phases 0 to 2:
@@ -427,6 +427,13 @@ What shipped in phases 0 to 2:
 - Components in `lib/widgets/`: `Pressable` (the ripple fix), `AppButton` / `AppIconButton`, `AppTextField` / `AppPasswordField`, `AppChoiceChip`, `AppCard`, `ListGroup` / `AppListTile` / `AppIconTile` / `AppAvatar`, `KeyValueList`, `StatusBadge`, `AppHeader` / `SectionHeader`, `EmptyState` / `ErrorState`, `Skeleton*`, `MoneyText` / `Money`, `AppNavBar`, `showToast` / `AppToast`, `showAppDialog` / `AppDialog`, `showAppSheet` / `AppSheet`.
 - Shell: tabs kept alive with a cross-fade (History keeps its filter and scroll), Home and History refresh on return, and one page transition across the app.
 - Existing screens were switched onto the components (no layout redesign yet), 19 unused files were removed (plus 4 replaced by the new components), and `tool/design_lint.sh` reports 0 violations (down from 346).
+
+What shipped in phase 7:
+
+- Login and Setup show validation errors under the field they belong to (they previously never appeared at all, because the screens only rendered errors in the `failure` status) and clear them as soon as the field is edited. Server errors use the new `AppAlert` / `AnimatedAlert` inline alert.
+- Login: autofill hints for email, password and one-time codes; a digits-only, 6-character OTP field that submits from the keyboard; a fade and slide between the password and OTP steps; tapping outside a field dismisses the keyboard.
+- Setup: "Optional" helper text on email and phone, and a skeleton plus a "Detecting" badge while the device ID loads.
+- Splash: the logo mark scales in and the wordmark follows; a thin progress bar appears only if loading takes longer than 800ms; the splash stays up at least 600ms so it never flashes; it now fills the screen (it previously shrank to the logo's width); and the version label uses the real type scale.
 
 Recommended order rationale: phases 0 to 2 remove most inconsistencies automatically because screens already share `BackHeader`, `TransactionRow`, `GradientButton` and `AppTextField`. Screen phases then only handle layout and data presentation.
 

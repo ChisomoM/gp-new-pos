@@ -7,11 +7,18 @@ class SetupState extends Equatable {
     this.status = SetupStatus.initial,
     this.deviceId,
     this.errorMessage,
+    this.nameError,
   });
 
   final SetupStatus status;
   final String? deviceId;
+
+  /// Registration (server) error, shown as an alert.
   final String? errorMessage;
+
+  /// Business name validation error, shown under the field. Not carried
+  /// over by [copyWith].
+  final String? nameError;
 
   bool get isSubmitting => status == SetupStatus.submitting;
 
@@ -19,14 +26,16 @@ class SetupState extends Equatable {
     SetupStatus? status,
     String? deviceId,
     String? errorMessage,
+    String? nameError,
   }) {
     return SetupState(
       status: status ?? this.status,
       deviceId: deviceId ?? this.deviceId,
       errorMessage: errorMessage ?? this.errorMessage,
+      nameError: nameError,
     );
   }
 
   @override
-  List<Object?> get props => [status, deviceId, errorMessage];
+  List<Object?> get props => [status, deviceId, errorMessage, nameError];
 }
