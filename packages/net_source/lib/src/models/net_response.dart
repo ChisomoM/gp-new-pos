@@ -27,15 +27,33 @@ class NetResponse {
 
   /// Deserializes the given [JsonMap] into a [NetResponse].
   ///
-  /// Some endpoints send `status` as a legacy int (`0`/`1`) while others
-  /// (e.g. auth failures like `{"status": "failed"}`) send it as a string,
-  /// so it's normalized to an int before handing off to the generated
-  /// parser to avoid a type-cast crash.
+  /// Some endpoints send `status` as a legacy int (`0`/`1`), some send a
+  /// numeric string (`"0"`/`"1"`), and some (e.g. `GET /transactions/list`,
+  /// which sends `{"status": "success", ...}` with no `success` boolean at
+  /// all) send a word describing the outcome instead. `int.tryParse` only
+  /// handles the numeric-string case and silently returns null for a word
+  /// like `"success"`, which [isSuccessful] then reads as failure — so
+  /// words are mapped to the legacy 0/1 convention here before handing off
+  /// to the generated parser.
   static NetResponse fromJson(JsonMap json) {
     final rawStatus = json['status'];
     final normalized = Map<String, dynamic>.from(json);
     if (rawStatus is String) {
-      normalized['status'] = int.tryParse(rawStatus);
+      final asInt = int.tryParse(rawStatus);
+      if (asInt != null) {
+        normalized['status'] = asInt;
+      } else {
+        const successWords = {'success', 'successful', 'ok', 'completed'};
+        const failureWords = {'failed', 'failure', 'error'};
+        final word = rawStatus.toLowerCase();
+        if (successWords.contains(word)) {
+          normalized['status'] = 0;
+        } else if (failureWords.contains(word)) {
+          normalized['status'] = 1;
+        } else {
+          normalized['status'] = null;
+        }
+      }
     }
     return _$NetResponseFromJson(normalized);
   }

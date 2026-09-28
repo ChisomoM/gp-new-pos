@@ -1,16 +1,16 @@
 /// A single transaction row, shared by Dashboard, Transaction History,
 /// Transaction Details, and the Collections result screen.
 ///
-/// ASSUMPTION: `pos_mobile_app_endpoints.md` documents the response envelope
-/// for `GET /transactions/list` and `GET /transactions/get/:id`
-/// (`data.data.transaction`, `data.status_counts`, ...) but explicitly
-/// redacts the actual field names of a transaction row
-/// (`"...transaction row fields..."`). [Transaction.fromJson] therefore
-/// checks a short list of plausible key names per field (e.g.
-/// `phone_number`/`msisdn`/`customer_phone`, `amount` as either a number or
-/// a numeric string) instead of assuming one exact shape, so a row still
-/// renders even if the live API's naming differs from the doc's best guess
-/// — narrow this back down once the real shape is confirmed.
+/// Field names confirmed against a live `GET /transactions/list` response
+/// (logged at `net_source.dart`'s `Response @ transactions/list`): the
+/// customer's number is `customer` (not `phone_number`), the channel is a
+/// ready-to-display `payment_channel_name` (e.g. `"Airtel (Collection)"`,
+/// not a bare `"airtel"` code), and the completion time is `resolved_at`
+/// (`created_at` is when the request was made, not when it settled).
+/// [Transaction.fromJson] tries the confirmed key first for each field,
+/// then falls back to the doc's originally-guessed key names, since
+/// `pos_mobile_app_endpoints.md` redacts the full row shape and other
+/// endpoints (or future backend changes) may still use them.
 class Transaction {
   const Transaction({
     required this.id,
@@ -39,7 +39,8 @@ class Transaction {
                   json['reference'] ??
                   '') as Object)
               .toString(),
-      phoneNumber: ((json['phone_number'] ??
+      phoneNumber: ((json['customer'] ??
+                  json['phone_number'] ??
                   json['msisdn'] ??
                   json['customer_phone'] ??
                   json['phone'] ??
@@ -50,13 +51,15 @@ class Transaction {
       status: ((json['status'] ?? json['transaction_status'] ?? 'pending')
               as Object)
           .toString(),
-      provider: (json['provider'] ??
+      provider: (json['payment_channel_name'] ??
+              json['provider'] ??
               json['channel'] ??
               json['payment_channel'] ??
               json['network'])
           ?.toString(),
       processedAt: DateTime.tryParse(
-        ((json['processed_at'] ??
+        ((json['resolved_at'] ??
+                json['processed_at'] ??
                 json['completed_at'] ??
                 json['created_at'] ??
                 json['date_created'] ??
@@ -92,30 +95,24 @@ class Transaction {
   bool get isFailed =>
       status.toLowerCase() == 'failed' || status.toLowerCase() == 'failure';
 
-  /// Display label for the provider (e.g. `airtel` -> `Airtel Money`).
+  /// Display label for the provider. `provider` is already a
+  /// ready-to-display name from the live API (e.g. `"Airtel (Collection)"`
+  /// for `payment_channel_name`), so this matches by substring rather than
+  /// an exact code like `"airtel"`.
   String get channelLabel {
-    switch (provider?.toLowerCase()) {
-      case 'airtel':
-        return 'Airtel Money';
-      case 'mtn':
-        return 'MTN Money';
-      case 'zamtel':
-        return 'Zamtel Money';
-      default:
-        return 'Mobile Money';
-    }
+    final p = provider?.toLowerCase() ?? '';
+    if (p.contains('airtel')) return 'Airtel Money';
+    if (p.contains('mtn')) return 'MTN Money';
+    if (p.contains('zamtel')) return 'Zamtel Money';
+    return 'Mobile Money';
   }
 
   /// Avatar initial, colored per channel in [TransactionRow].
   String get avatarLetter {
-    switch (provider?.toLowerCase()) {
-      case 'mtn':
-        return 'M';
-      case 'zamtel':
-        return 'Z';
-      default:
-        return 'A';
-    }
+    final p = provider?.toLowerCase() ?? '';
+    if (p.contains('mtn')) return 'M';
+    if (p.contains('zamtel')) return 'Z';
+    return 'A';
   }
 }
 
