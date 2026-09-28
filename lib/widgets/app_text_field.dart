@@ -1,74 +1,178 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/utils/utils.dart';
+import 'package:flutter/services.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 
-OutlineInputBorder _fieldBorder(Color color) => OutlineInputBorder(
-  borderRadius: BorderRadius.circular(kAppCornerRadius),
-  borderSide: BorderSide(color: color, width: 1.5),
-);
-
-const _labelStyle = TextStyle(
-  fontSize: 14,
-  fontWeight: FontWeight.w600,
-  color: AppColors.textSecondary,
-);
-
-const _inputStyle = TextStyle(fontSize: 15, color: AppColors.textPrimary);
-
-/// Labeled text input matching the Setup/Login mockups: label above,
-/// 1.5px bordered radius-xl field, focus ring in gp-cobalt.
-class AppTextField extends StatelessWidget {
+/// Labeled text input (plan §3): label 8px above, 52px field with a 1.5px
+/// border that animates to cobalt on focus, and helper / error text 4px
+/// below that slides in instead of popping.
+///
+/// Covers plain text, phone, amount (via [textStyle] + [prefixText]) and
+/// password ([obscureText]) fields.
+class AppTextField extends StatefulWidget {
   const AppTextField({
-    required this.label,
+    this.label,
     this.controller,
     this.hintText,
-    this.keyboardType,
-    this.fillColor = AppColors.surfaceWhite,
+    this.helperText,
     this.errorText,
-    this.enabled = true,
+    this.keyboardType,
     this.textInputAction,
     this.onChanged,
+    this.onSubmitted,
+    this.enabled = true,
+    this.fillColor = AppColors.surfaceWhite,
+    this.prefixIcon,
+    this.prefixText,
+    this.textStyle,
+    this.hintStyle,
+    this.prefixStyle,
+    this.obscureText = false,
+    this.autofocus = false,
+    this.inputFormatters,
+    this.focusNode,
+    this.labelTrailing,
     super.key,
   });
 
-  final String label;
+  final String? label;
   final TextEditingController? controller;
   final String? hintText;
-  final TextInputType? keyboardType;
-  final Color fillColor;
+  final String? helperText;
+
+  /// Shown under the field and turns the border red. `null` or empty
+  /// clears it.
   final String? errorText;
-  final bool enabled;
+  final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final bool enabled;
+  final Color fillColor;
+  final IconData? prefixIcon;
+  final String? prefixText;
+
+  /// Overrides the input text style, e.g. `AppTextStyles.gpNum` for amounts.
+  final TextStyle? textStyle;
+  final TextStyle? hintStyle;
+  final TextStyle? prefixStyle;
+
+  /// Password field: hides the text and adds a show / hide toggle.
+  final bool obscureText;
+  final bool autofocus;
+  final List<TextInputFormatter>? inputFormatters;
+  final FocusNode? focusNode;
+
+  /// Optional widget on the right of the label row.
+  final Widget? labelTrailing;
+
+  @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  late bool _obscured = widget.obscureText;
+
+  OutlineInputBorder _border(Color color) => OutlineInputBorder(
+    borderRadius: AppRadius.brMd,
+    borderSide: BorderSide(color: color, width: 1.5),
+  );
 
   @override
   Widget build(BuildContext context) {
+    final error = widget.errorText;
+    final hasError = error != null && error.isNotEmpty;
+    final message = hasError ? error : widget.helperText;
+    final idleBorder = hasError ? AppColors.dangerIcon : AppColors.borderMedium;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: _labelStyle),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          enabled: enabled,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          onChanged: onChanged,
-          style: _inputStyle,
+        if (widget.label != null) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.label!,
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              ?widget.labelTrailing,
+            ],
+          ),
+          const SizedBox(height: AppSpace.label),
+        ],
+        TextField(
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          enabled: widget.enabled,
+          autofocus: widget.autofocus,
+          keyboardType: widget.keyboardType,
+          textInputAction: widget.textInputAction,
+          onChanged: widget.onChanged,
+          onSubmitted: widget.onSubmitted,
+          inputFormatters: widget.inputFormatters,
+          obscureText: _obscured,
+          style: widget.textStyle ?? AppTextStyles.bodyLg,
+          cursorColor: AppColors.gpCobalt,
           decoration: InputDecoration(
-            hintText: hintText,
-            errorText: errorText,
-            filled: true,
-            fillColor: fillColor,
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+            hintText: widget.hintText,
+            hintStyle: widget.hintStyle,
+            fillColor: widget.enabled
+                ? widget.fillColor
+                : AppColors.surfaceSubtle,
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Icon(widget.prefixIcon, size: AppIconSize.md),
+            prefixText: widget.prefixText,
+            prefixStyle:
+                widget.prefixStyle ??
+                AppTextStyles.bodyLg.copyWith(color: AppColors.textTertiary),
+            suffixIcon: widget.obscureText
+                ? IconButton(
+                    tooltip: _obscured ? 'Show password' : 'Hide password',
+                    onPressed: () => setState(() => _obscured = !_obscured),
+                    icon: AnimatedSwitcher(
+                      duration: AppMotion.of(context, AppMotion.fast),
+                      child: Icon(
+                        _obscured ? AppIcons.eye : AppIcons.eyeSlash,
+                        key: ValueKey(_obscured),
+                        size: AppIconSize.md,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  )
+                : null,
+            border: _border(idleBorder),
+            enabledBorder: _border(idleBorder),
+            focusedBorder: _border(
+              hasError ? AppColors.dangerIcon : AppColors.gpCobalt,
             ),
-            border: _fieldBorder(AppColors.borderMedium),
-            enabledBorder: _fieldBorder(AppColors.borderMedium),
-            focusedBorder: _fieldBorder(AppColors.gpCobalt),
-            errorBorder: _fieldBorder(AppColors.dangerIcon),
+            disabledBorder: _border(AppColors.borderLight),
+          ),
+        ),
+        AnimatedSize(
+          duration: AppMotion.of(context, AppMotion.fast),
+          curve: AppMotion.enter,
+          alignment: Alignment.topLeft,
+          child: AnimatedSwitcher(
+            duration: AppMotion.of(context, AppMotion.fast),
+            child: message == null || message.isEmpty
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    key: ValueKey('$hasError$message'),
+                    padding: const EdgeInsets.only(top: AppSpace.x1),
+                    child: Text(
+                      message,
+                      style: AppTextStyles.caption.copyWith(
+                        color: hasError
+                            ? AppColors.dangerText
+                            : AppColors.textTertiary,
+                      ),
+                    ),
+                  ),
           ),
         ),
       ],
@@ -76,12 +180,11 @@ class AppTextField extends StatelessWidget {
   }
 }
 
-/// Password field matching the Login mockup: a "Password" label with an
-/// inline Show/Hide text toggle (not an icon), same bordered field style
-/// as [AppTextField].
-class AppPasswordField extends StatefulWidget {
+/// Password field: an [AppTextField] with a show / hide toggle.
+class AppPasswordField extends StatelessWidget {
   const AppPasswordField({
     required this.controller,
+    this.label = 'Password',
     this.errorText,
     this.enabled = true,
     this.fillColor = AppColors.surfaceWhite,
@@ -90,74 +193,24 @@ class AppPasswordField extends StatefulWidget {
   });
 
   final TextEditingController controller;
+  final String label;
   final String? errorText;
   final bool enabled;
   final Color fillColor;
   final ValueChanged<String>? onSubmitted;
 
   @override
-  State<AppPasswordField> createState() => _AppPasswordFieldState();
-}
-
-class _AppPasswordFieldState extends State<AppPasswordField> {
-  bool _obscure = true;
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Password', style: _labelStyle),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(6),
-                onTap: () => setState(() => _obscure = !_obscure),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: Text(
-                    _obscure ? 'Show' : 'Hide',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gpCobalt,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: widget.controller,
-          obscureText: _obscure,
-          enabled: widget.enabled,
-          onFieldSubmitted: widget.onSubmitted,
-          style: _inputStyle,
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            errorText: widget.errorText,
-            filled: true,
-            fillColor: widget.fillColor,
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: _fieldBorder(AppColors.borderMedium),
-            enabledBorder: _fieldBorder(AppColors.borderMedium),
-            focusedBorder: _fieldBorder(AppColors.gpCobalt),
-            errorBorder: _fieldBorder(AppColors.dangerIcon),
-          ),
-        ),
-      ],
+    return AppTextField(
+      label: label,
+      controller: controller,
+      hintText: '••••••••',
+      errorText: errorText,
+      enabled: enabled,
+      fillColor: fillColor,
+      onSubmitted: onSubmitted,
+      textInputAction: TextInputAction.done,
+      obscureText: true,
     );
   }
 }

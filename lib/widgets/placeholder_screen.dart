@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/widgets/app_header.dart';
+import 'package:geepay_pos/widgets/empty_state.dart';
+import 'package:geepay_pos/widgets/status_badge.dart';
 
-/// Minimal "not built yet" placeholder for destinations the design spec
-/// covers but this pass doesn't implement (Collections, Packages, Cashier
-/// Summary, Transaction History, Settings, ...).
+/// "Not built yet" destination for entry points kept visible on purpose
+/// (Cashier summary, Company profile).
 class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({required this.title, super.key});
 
@@ -14,22 +15,27 @@ class PlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Iconsax.clock, size: 40, color: AppColors.textMuted),
-            const SizedBox(height: 16),
-            Text(
-              '$title — coming soon',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+      body: Column(
+        children: [
+          AppHeader(title: title),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                child: EmptyState(
+                  icon: AppIcons.comingSoon,
+                  badge: const StatusBadge(
+                    label: 'Coming soon',
+                    tone: BadgeTone.info,
+                  ),
+                  title: title,
+                  message:
+                      "We're still building this. It will appear here "
+                      'in a future update.',
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

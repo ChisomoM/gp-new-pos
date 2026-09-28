@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_gradients.dart';
-import 'package:geepay_pos/app/theme/app_logos.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/setup/cubit/cubit.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class SetupBody extends StatefulWidget {
   const SetupBody({super.key});
@@ -40,7 +36,7 @@ class _SetupBodyState extends State<SetupBody> {
     return BlocBuilder<SetupCubit, SetupState>(
       builder: (context, state) {
         final deviceCode = state.deviceId == null
-            ? '—'
+            ? '-'
             : 'GP-POS-${state.deviceId!.substring(0, 6).toUpperCase()}';
         return Column(
           children: [
@@ -48,34 +44,35 @@ class _SetupBodyState extends State<SetupBody> {
               decoration: const BoxDecoration(
                 gradient: AppGradients.hero,
                 borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(24),
+                  bottom: Radius.circular(AppRadius.xl),
                 ),
               ),
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 26),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.gutter,
+                    AppSpace.x8,
+                    AppSpace.gutter,
+                    AppSpace.x6,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Image.asset(AppLogos.wordmarkWhite, width: 135),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpace.x6),
                       Text(
                         'Set up this device',
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                          color: Colors.white,
+                        style: AppTextStyles.title1.copyWith(
+                          color: AppColors.onBrandHigh,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
+                      const SizedBox(height: AppSpace.x1),
+                      Text(
                         "Register this terminal to your business so it's "
                         'ready to accept payments.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.4,
-                          color: Color.fromRGBO(255, 255, 255, 0.68),
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.onBrandMid,
                         ),
                       ),
                     ],
@@ -85,7 +82,12 @@ class _SetupBodyState extends State<SetupBody> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.gutter,
+                  AppSpace.x6,
+                  AppSpace.gutter,
+                  AppSpace.x4,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -94,99 +96,59 @@ class _SetupBodyState extends State<SetupBody> {
                       controller: _businessName,
                       hintText: 'e.g. Kashikite Traders',
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpace.field),
                     AppTextField(
                       label: 'Business email',
                       controller: _businessEmail,
                       hintText: 'you@business.com',
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpace.field),
                     AppTextField(
                       label: 'Business phone',
                       controller: _businessPhone,
                       hintText: '0973 042 237',
                       keyboardType: TextInputType.phone,
                     ),
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceWhite,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
+                    const SizedBox(height: AppSpace.field),
+                    AppCard(
                       child: Row(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.infoFill,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Iconsax.mobile,
-                              size: 17,
-                              color: AppColors.gpCobalt,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
+                          const AppIconTile(icon: AppIcons.device),
+                          const SizedBox(width: AppSpace.x3),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Device ID',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
+                                  style: AppTextStyles.bodyStrong,
                                 ),
-                                const SizedBox(height: 1),
                                 Text(
                                   deviceCode,
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    color: AppColors.textMuted,
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textTertiary,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const Row(
-                            children: [
-                              Icon(
-                                Iconsax.tick_circle,
-                                size: 13,
-                                color: AppColors.successIcon,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'Detected',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F7A56),
-                                ),
-                              ),
-                            ],
-                          ),
+                          if (state.deviceId != null)
+                            const StatusBadge(
+                              label: 'Detected',
+                              tone: BadgeTone.success,
+                              showDot: true,
+                            ),
                         ],
                       ),
                     ),
                     if (state.status == SetupStatus.failure &&
                         state.errorMessage != null) ...[
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpace.x3),
                       Text(
                         state.errorMessage!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.dangerIcon,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.dangerText,
                         ),
                       ),
                     ],
@@ -204,10 +166,14 @@ class _SetupBodyState extends State<SetupBody> {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-                  child: GradientButton(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.gutter,
+                    AppSpace.x3,
+                    AppSpace.gutter,
+                    AppSpace.x4,
+                  ),
+                  child: AppButton(
                     label: 'Complete setup',
-                    icon: Iconsax.arrow_right_3,
                     isLoading: state.isSubmitting,
                     onPressed: state.deviceId == null
                         ? null

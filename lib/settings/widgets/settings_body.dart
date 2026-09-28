@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_gradients.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
 import 'package:geepay_pos/printer_settings/view/printer_settings_page.dart';
 import 'package:geepay_pos/splash/view/splash_page.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 /// {@template settings_body}
-/// Body of the Settings tab: a flat white [BackHeader], a gradient profile
-/// summary card (the same brand gradient/shadow tokens used for hero
-/// sections and CTA buttons — see [AppGradients.hero]), grouped
-/// "Business"/"App" setting tiles with elevated cards, and a logout button.
+/// Body of the Settings tab: a large tab header, a gradient profile
+/// summary card, grouped "Business" / "App" rows and a log out button.
 /// {@endtemplate}
 class SettingsBody extends StatelessWidget {
   /// {@macro settings_body}
@@ -23,35 +18,60 @@ class SettingsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const BackHeader(title: 'Settings'),
+        const AppHeader.large(title: 'Settings'),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpace.gutter),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _ProfileCard(),
-                const SizedBox(height: 22),
-                const _SectionLabel('Business'),
-                const SizedBox(height: 8),
-                const _SettingsCard(
+                const SizedBox(height: AppSpace.section),
+                const SectionHeader(title: 'Business', overline: true),
+                const SizedBox(height: AppSpace.x2),
+                ListGroup(
                   children: [
-                    _CompanyProfileTile(),
-                    _SettingsTileDivider(),
-                    _PrinterSettingsTile(),
+                    AppListTile(
+                      leading: const AppIconTile(icon: AppIcons.business),
+                      title: 'Company profile',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              const PlaceholderScreen(title: 'Company profile'),
+                        ),
+                      ),
+                    ),
+                    AppListTile(
+                      leading: const AppIconTile(icon: AppIcons.printer),
+                      title: 'Printer settings',
+                      subtitle: 'Choose your default receipt printer',
+                      onTap: () => Navigator.of(
+                        context,
+                      ).push(PrinterSettingsPage.route()),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 22),
-                const _SectionLabel('App'),
-                const SizedBox(height: 8),
-                const _SettingsCard(
+                const SizedBox(height: AppSpace.section),
+                const SectionHeader(title: 'App', overline: true),
+                const SizedBox(height: AppSpace.x2),
+                const ListGroup(
                   children: [
-                    _UpdatesTile(),
-                    _SettingsTileDivider(),
+                    AppListTile(
+                      leading: AppIconTile(
+                        icon: AppIcons.refresh,
+                        color: AppColors.successIcon,
+                        background: AppColors.successFill,
+                      ),
+                      title: 'Updates',
+                      trailing: StatusBadge(
+                        label: 'Up to date',
+                        tone: BadgeTone.success,
+                      ),
+                    ),
                     _AppVersionTile(),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpace.section),
                 const _LogoutButton(),
               ],
             ),
@@ -74,36 +94,31 @@ class _ProfileCard extends StatelessWidget {
         : (user.phone ?? '');
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'C';
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(AppSpace.x4),
+      decoration: const BoxDecoration(
         gradient: AppGradients.hero,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppGradients.gradientButton,
+        borderRadius: AppRadius.brLg,
+        boxShadow: AppShadows.brandGlow,
       ),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: AppSpace.x12,
+            height: AppSpace.x12,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
+              color: AppColors.onBrandStroke,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.35),
-                width: 1.5,
-              ),
+              border: Border.all(color: AppColors.onBrandLow, width: 1.5),
             ),
             child: Text(
               initial,
-              style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Colors.white,
+              style: AppTextStyles.title3.copyWith(
+                color: AppColors.onBrandHigh,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpace.x4),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,221 +127,23 @@ class _ProfileCard extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.dmSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16.5,
-                    color: Colors.white,
+                  style: AppTextStyles.headline.copyWith(
+                    color: AppColors.onBrandHigh,
                   ),
                 ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                if (subtitle.isNotEmpty)
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.75),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.onBrandMid,
                     ),
                   ),
-                ],
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppGradients.card,
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _SettingsTileDivider extends StatelessWidget {
-  const _SettingsTileDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 1, color: AppColors.divider);
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    this.onTap,
-    this.iconColor = AppColors.gpCobalt,
-    this.iconBackground = AppColors.infoFill,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final Color iconColor;
-  final Color iconBackground;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 17, color: iconColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 1),
-                    Text(
-                      subtitle!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (trailing != null)
-              trailing!
-            else if (onTap != null)
-              const Icon(
-                Iconsax.arrow_right_3,
-                size: 16,
-                color: AppColors.textMuted,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CompanyProfileTile extends StatelessWidget {
-  const _CompanyProfileTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Iconsax.building,
-      title: 'Company profile',
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const PlaceholderScreen(title: 'Company profile'),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrinterSettingsTile extends StatelessWidget {
-  const _PrinterSettingsTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Iconsax.printer,
-      title: 'Printer settings',
-      subtitle: 'Choose your default receipt printer',
-      onTap: () => Navigator.of(context).push(PrinterSettingsPage.route()),
-    );
-  }
-}
-
-class _UpdatesTile extends StatelessWidget {
-  const _UpdatesTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Iconsax.refresh_circle,
-      title: 'Updates',
-      iconColor: AppColors.successIcon,
-      iconBackground: AppColors.successFill,
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppColors.successFill,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: const Text(
-          'UP TO DATE',
-          style: TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.successText,
-            letterSpacing: 0.3,
-          ),
-        ),
       ),
     );
   }
@@ -340,15 +157,13 @@ class _AppVersionTile extends StatelessWidget {
     final appVersion = context.select<AuthBloc, String>(
       (bloc) => bloc.state.appVersion,
     );
-    return _SettingsTile(
-      icon: Iconsax.info_circle,
+    return AppListTile(
+      leading: const AppIconTile(icon: AppIcons.info),
       title: 'App version',
       trailing: Text(
-        appVersion.isEmpty ? '—' : appVersion,
-        style: const TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textMuted,
+        appVersion.isEmpty ? '-' : appVersion,
+        style: AppTextStyles.bodyStrong.copyWith(
+          color: AppColors.textTertiary,
         ),
       ),
     );
@@ -365,6 +180,8 @@ class _LogoutButton extends StatelessWidget {
       message: 'Are you sure you want to log out of this device?',
       yesText: 'Log out',
       noText: 'Cancel',
+      destructive: true,
+      icon: AppIcons.logout,
     );
     if (confirmed != true || !context.mounted) return;
     context.read<AuthBloc>().add(AuthLogoutRequested());
@@ -376,32 +193,10 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => _confirmLogout(context),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: AppColors.dangerFillAlt),
-          backgroundColor: AppColors.dangerFill,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: const Icon(
-          Iconsax.logout,
-          size: 18,
-          color: AppColors.dangerText,
-        ),
-        label: const Text(
-          'Log out',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.dangerText,
-          ),
-        ),
-      ),
+    return AppButton.destructive(
+      label: 'Log out',
+      icon: AppIcons.logout,
+      onPressed: () => _confirmLogout(context),
     );
   }
 }

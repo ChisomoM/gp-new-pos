@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
 import 'package:geepay_pos/utils/print_helper.dart';
 import 'package:geepay_pos/utils/printer_dispatch.dart';
 import 'package:geepay_pos/utils/printer_preference.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:geepay_pos/widgets/widgets.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 /// Lets the user pick a default receipt-printer backend (the device's
@@ -125,154 +125,101 @@ class _PrinterSettingsPageState extends State<PrinterSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  const _Header(title: 'Printer settings'),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        const _SectionLabel('Print mode'),
-                        const SizedBox(height: 8),
-                        _PrintModeOption(
-                          icon: Icons.print_outlined,
-                          title: 'Built-in printer',
-                          subtitle:
-                              "Uses the device's internal thermal printer",
-                          selected: _choice == PrinterChoice.builtin,
-                          onTap: () => _onChoiceSelected(PrinterChoice.builtin),
-                        ),
-                        const SizedBox(height: 8),
-                        _PrintModeOption(
-                          icon: Icons.bluetooth,
-                          title: 'Bluetooth printer',
-                          subtitle: 'Connect a paired external receipt printer',
-                          selected: _choice == PrinterChoice.bluetooth,
-                          onTap: () =>
-                              _onChoiceSelected(PrinterChoice.bluetooth),
-                        ),
-                        if (_choice == PrinterChoice.bluetooth) ...[
-                          const SizedBox(height: 22),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const _SectionLabel('Bluetooth devices'),
-                              TextButton(
-                                onPressed: _loadingDevices
-                                    ? null
-                                    : _loadPairedDevices,
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+      body: Column(
+        children: [
+          const AppHeader(title: 'Printer settings'),
+          Expanded(
+            child: _loading
+                // Reading the saved preference takes milliseconds; show the
+                // empty page rather than flashing a spinner.
+                ? const SizedBox.shrink()
+                : ListView(
+                    padding: const EdgeInsets.all(AppSpace.gutter),
+                    children: [
+                      const SectionHeader(title: 'Print mode', overline: true),
+                      const SizedBox(height: AppSpace.x2),
+                      _PrintModeOption(
+                        icon: AppIcons.printer,
+                        title: 'Built-in printer',
+                        subtitle: "Uses the device's internal thermal printer",
+                        selected: _choice == PrinterChoice.builtin,
+                        onTap: () => _onChoiceSelected(PrinterChoice.builtin),
+                      ),
+                      const SizedBox(height: AppSpace.x2),
+                      _PrintModeOption(
+                        icon: AppIcons.bluetooth,
+                        title: 'Bluetooth printer',
+                        subtitle: 'Connect a paired external receipt printer',
+                        selected: _choice == PrinterChoice.bluetooth,
+                        onTap: () => _onChoiceSelected(PrinterChoice.bluetooth),
+                      ),
+                      AnimatedSize(
+                        duration: AppMotion.of(context, AppMotion.base),
+                        curve: AppMotion.enter,
+                        alignment: Alignment.topCenter,
+                        child: _choice == PrinterChoice.bluetooth
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpace.section,
                                 ),
-                                child: Text(
-                                  _loadingDevices ? 'Scanning...' : 'Scan',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.gpCobalt,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    SectionHeader(
+                                      title: 'Bluetooth devices',
+                                      overline: true,
+                                      actionLabel: _loadingDevices
+                                          ? 'Scanning'
+                                          : 'Scan',
+                                      actionLoading: _loadingDevices,
+                                      onAction: _loadPairedDevices,
+                                    ),
+                                    const SizedBox(height: AppSpace.x2),
+                                    _DeviceList(
+                                      loading: _loadingDevices,
+                                      devices: _pairedDevices,
+                                      connectedMac: _connectedMac,
+                                      onSelect: _onDeviceSelected,
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          _DeviceList(
-                            loading: _loadingDevices,
-                            devices: _pairedDevices,
-                            selectedMac: _selectedMac,
-                            connectedMac: _connectedMac,
-                            onSelect: _onDeviceSelected,
-                          ),
-                        ],
-                      ],
-                    ),
+                              )
+                            : const SizedBox(width: double.infinity),
+                      ),
+                    ],
                   ),
-                  _TestPrintButton(
-                    loading: _testPrinting,
-                    onPressed: _testPrinting ? null : _runTestPrint,
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FA),
-                  borderRadius: BorderRadius.circular(10),
+          ),
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceWhite,
+              border: Border(top: BorderSide(color: AppColors.divider)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.gutter,
+                  AppSpace.x3,
+                  AppSpace.gutter,
+                  AppSpace.x4,
                 ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 16,
-                  color: AppColors.textSecondary,
+                child: AppButton(
+                  label: 'Run test print',
+                  icon: AppIcons.printer,
+                  isLoading: _testPrinting,
+                  onPressed: _loading || _testPrinting ? null : _runTestPrint,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11.5,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textMuted,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-}
-
+/// Radio-style choice card for the print mode.
 class _PrintModeOption extends StatelessWidget {
   const _PrintModeOption({
     required this.icon,
@@ -290,77 +237,65 @@ class _PrintModeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.infoFill : AppColors.surfaceWhite,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? AppColors.gpCobalt : AppColors.borderLight,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
+    final duration = AppMotion.of(context, AppMotion.fast);
+    return Semantics(
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: AppCard(
+        selected: selected,
+        onTap: onTap,
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceWhite,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: selected ? AppColors.gpCobalt : AppColors.textTertiary,
-              ),
+            AppIconTile(
+              icon: icon,
+              color: selected ? AppColors.gpCobalt : AppColors.textTertiary,
+              background: selected
+                  ? AppColors.surfaceWhite
+                  : AppColors.surfaceSubtle,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpace.x3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: selected
-                          ? AppColors.gpNavy
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
+                  Text(title, style: AppTextStyles.bodyStrong),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: selected
-                          ? AppColors.textSecondary
-                          : AppColors.textMuted,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
-            Container(
-              width: 20,
-              height: 20,
-              alignment: Alignment.center,
+            const SizedBox(width: AppSpace.x3),
+            AnimatedContainer(
+              duration: duration,
+              width: AppSpace.x5,
+              height: AppSpace.x5,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? AppColors.gpCobalt : Colors.transparent,
-                border: selected
-                    ? null
-                    : Border.all(color: AppColors.borderMedium, width: 1.5),
+                color: selected ? AppColors.gpCobalt : AppColors.surfaceWhite,
+                border: Border.all(
+                  color: selected ? AppColors.gpCobalt : AppColors.borderMedium,
+                  width: 1.5,
+                ),
               ),
-              child: selected
-                  ? const Icon(Icons.check, size: 12, color: Colors.white)
-                  : null,
+              child: AnimatedScale(
+                scale: selected ? 1 : 0,
+                duration: duration,
+                curve: AppMotion.emphasized,
+                child: Center(
+                  child: Container(
+                    width: AppSpace.x2,
+                    height: AppSpace.x2,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surfaceWhite,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -373,57 +308,53 @@ class _DeviceList extends StatelessWidget {
   const _DeviceList({
     required this.loading,
     required this.devices,
-    required this.selectedMac,
     required this.connectedMac,
     required this.onSelect,
   });
 
   final bool loading;
   final List<BluetoothInfo> devices;
-  final String? selectedMac;
   final String? connectedMac;
   final void Function(BluetoothInfo) onSelect;
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
-      );
+    if (loading && devices.isEmpty) {
+      return const SkeletonTransactionList(count: 2);
     }
     if (devices.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderLight),
-        ),
-        child: const Text(
-          'No paired Bluetooth devices found. Pair a printer in your '
-          'device Bluetooth settings first, then tap Scan.',
-          style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+      return AppCard(
+        child: Row(
+          children: [
+            const AppIconTile(
+              icon: AppIcons.bluetooth,
+              color: AppColors.textTertiary,
+              background: AppColors.surfaceSubtle,
+            ),
+            const SizedBox(width: AppSpace.x3),
+            Expanded(
+              child: Text(
+                'No paired Bluetooth printers found. Pair a printer in your '
+                "device's Bluetooth settings first, then tap Scan.",
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < devices.length; i++)
-            _DeviceRow(
-              device: devices[i],
-              isLast: i == devices.length - 1,
-              connected: devices[i].macAdress == connectedMac,
-              onTap: () => onSelect(devices[i]),
-            ),
-        ],
-      ),
+    return ListGroup(
+      elevation: AppCardElevation.flat,
+      children: [
+        for (final device in devices)
+          _DeviceRow(
+            device: device,
+            connected: device.macAdress == connectedMac,
+            onTap: () => onSelect(device),
+          ),
+      ],
     );
   }
 }
@@ -431,162 +362,32 @@ class _DeviceList extends StatelessWidget {
 class _DeviceRow extends StatelessWidget {
   const _DeviceRow({
     required this.device,
-    required this.isLast,
     required this.connected,
     required this.onTap,
   });
 
   final BluetoothInfo device;
-  final bool isLast;
   final bool connected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.divider)),
+    return AppListTile(
+      leading: AppIconTile(
+        icon: AppIcons.printer,
+        color: connected ? AppColors.gpCobalt : AppColors.textTertiary,
+        background: connected ? AppColors.infoFill : AppColors.surfaceSubtle,
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: connected ? AppColors.infoFill : const Color(0xFFF7F8FA),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.print_outlined,
-              size: 16,
-              color: connected ? AppColors.gpCobalt : AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  device.name,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  connected ? 'Connected · ${device.macAdress}' : 'Paired',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (connected)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.successFill,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'CONNECTED',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.successText,
-                  letterSpacing: 0.3,
-                ),
-              ),
+      title: device.name,
+      subtitle: connected ? device.macAdress : 'Paired',
+      onTap: connected ? null : onTap,
+      trailing: connected
+          ? const StatusBadge(
+              label: 'Connected',
+              tone: BadgeTone.success,
+              showDot: true,
             )
-          else
-            TextButton(
-              onPressed: onTap,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'Connect',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.gpCobalt,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TestPrintButton extends StatelessWidget {
-  const _TestPrintButton({required this.loading, required this.onPressed});
-
-  final bool loading;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(top: BorderSide(color: AppColors.divider)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              colors: [
-                AppColors.gpCobalt,
-                Color(0xFF2B6FC2),
-                AppColors.gpSky,
-              ],
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: onPressed,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Run test print',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+          : AppButton.tertiary(label: 'Connect', onPressed: onTap),
     );
   }
 }

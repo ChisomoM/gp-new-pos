@@ -1,5 +1,6 @@
 import 'package:auth_repo/auth_repo.dart';
 import 'package:flutter/material.dart';
+import 'package:geepay_pos/app/theme/app_colors.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
 import 'package:geepay_pos/home/widgets/home_body.dart';
 import 'package:geepay_pos/utils/constants.dart';
@@ -58,7 +59,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return BlocProvider.value(
       value: _cubit,
       child: const Scaffold(
-        backgroundColor: Color(0xFFF9FAFB),
+        backgroundColor: AppColors.surfacePage,
         body: HomeView(),
       ),
     );

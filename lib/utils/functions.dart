@@ -23,10 +23,10 @@ Future<void> copyToClipBoard(BuildContext context, String text) async {
       ClipboardData(text: text),
     ).then((value) {
       if (context.mounted) {
-        showInfoSnackBar(
+        showToast(
           context,
           message: '$text copied',
-          seconds: 2,
+          tone: ToastTone.success,
         );
       }
     });
