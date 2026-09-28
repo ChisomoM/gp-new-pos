@@ -37,6 +37,7 @@ class App extends StatelessWidget {
         child: MaterialApp(
           theme: const AppTheme().themeData,
           scaffoldMessengerKey: scaffoldMessengerKey,
+          navigatorObservers: [routeObserver],
           builder: (context, child) {
             SizeConfig().init(context);
             return child!;
