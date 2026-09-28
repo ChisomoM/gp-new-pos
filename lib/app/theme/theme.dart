@@ -20,6 +20,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
+      scaffoldBackgroundColor: const Color(0xFFF9FAFB), // surface-page
       textTheme: _textTheme,
       colorScheme: _colorScheme,
       elevatedButtonTheme: _elevatedButtonTheme,
@@ -29,14 +30,27 @@ class AppTheme {
     );
   }
 
-  // TextTheme get _textTheme {
-  // return GoogleFonts.manropeTextTheme(
-  // ThemeData(brightness: Brightness.light).textTheme,
-  // );
-  // }
+  /// Body/UI text uses Inter; headings/display use DM Sans (design spec §1).
   TextTheme get _textTheme {
-    return GoogleFonts.ubuntuTextTheme(
+    final base = GoogleFonts.interTextTheme(
       ThemeData(brightness: Brightness.light).textTheme,
+    );
+    const headingFont = GoogleFonts.dmSans;
+    return base.copyWith(
+      displayLarge: headingFont(textStyle: base.displayLarge),
+      displayMedium: headingFont(textStyle: base.displayMedium),
+      displaySmall: headingFont(textStyle: base.displaySmall),
+      headlineLarge: headingFont(textStyle: base.headlineLarge),
+      headlineMedium: headingFont(textStyle: base.headlineMedium),
+      headlineSmall: headingFont(
+        textStyle: base.headlineSmall,
+        fontWeight: FontWeight.w700,
+      ),
+      titleLarge: headingFont(
+        textStyle: base.titleLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      titleMedium: headingFont(textStyle: base.titleMedium),
     );
   }
 

@@ -40,7 +40,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 class CurrencyText extends StatelessWidget {
   const CurrencyText({
-    required this.value, super.key,
+    required this.value,
+    super.key,
     this.prefixColor,
     this.valueColor,
   });

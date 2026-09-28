@@ -13,10 +13,10 @@ import 'package:notifications_repo/notifications_repo.dart';
 import 'package:permission_client/permission_client.dart';
 import 'package:services_repo/services_repo.dart';
 
-void main() {
+Future<void> main() async {
   final config = Config.staging();
   baseUrl = 'http://${config.host}';
-  bootstrap((
+  await bootstrap((
     prefs,
     analyticsRepository,
     auth,

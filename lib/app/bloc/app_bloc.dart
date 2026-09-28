@@ -15,17 +15,18 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc(
     AnalyticsRepo analyticsRepo,
     NotificationsRepo notificationsRepo,
-  )   : _notificationsRepo = notificationsRepo,
-        _analyticsRepo = analyticsRepo,
-        super(const AppState()) {
+  ) : _notificationsRepo = notificationsRepo,
+      _analyticsRepo = analyticsRepo,
+      super(const AppState()) {
     on<AppOpened>(_onAppOpened);
     on<AppEventTracked>(_onAppEventTracked);
     on<UserIdSet>(_onUserIdSet);
     on<UserPropertySet>(_onUserPropertySet);
     on<AppUpdatePrompted>(_onAppUpdatePrompted);
     on<AppNotificationReceived>(_onAppNotificationReceived);
-    _notificationSubscription =
-        _notificationsRepo.notification.listen(_notificationReceived);
+    _notificationSubscription = _notificationsRepo.notification.listen(
+      _notificationReceived,
+    );
   }
 
   final AnalyticsRepo _analyticsRepo;
@@ -51,14 +52,16 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     final platform = Platform.isIOS
         ? 'ios'
         : Platform.isAndroid
-            ? 'android'
-            : 'unknown';
+        ? 'android'
+        : 'unknown';
 
     final updateDetails = await _notificationsRepo.checkUpdate(platform);
 
     final packageInfo = await PackageInfo.fromPlatform();
-    final version =
-        (packageInfo.version, int.tryParse(packageInfo.buildNumber) ?? 1);
+    final version = (
+      packageInfo.version,
+      int.tryParse(packageInfo.buildNumber) ?? 1,
+    );
     emit(state.copyWith(updateDetails: updateDetails, version: version));
   }
 
@@ -72,20 +75,17 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   FutureOr<void> _onUserIdSet(
     UserIdSet event,
     Emitter<AppState> emit,
-  ) =>
-      _analyticsRepo.setUserId(event.id);
+  ) => _analyticsRepo.setUserId(event.id);
 
   FutureOr<void> _onUserPropertySet(
     UserPropertySet event,
     Emitter<AppState> emit,
-  ) =>
-      _analyticsRepo.setUserProperty(event.name, event.value);
+  ) => _analyticsRepo.setUserProperty(event.name, event.value);
 
   FutureOr<void> _onAppEventTracked(
     AppEventTracked event,
     Emitter<AppState> emit,
-  ) =>
-      _analyticsRepo.track(event.event);
+  ) => _analyticsRepo.track(event.event);
 
   @override
   Future<void> close() {

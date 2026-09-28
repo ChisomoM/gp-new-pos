@@ -20,9 +20,9 @@ class Config {
 
   /// Creates a dev config
   factory Config.dev() => Config(
-    baseUrl: 'https://prod.gateway.mygeepay.com/api/',
+    baseUrl: 'https://uat.gateway.mygeepay.com/api/',
     // socketUrl: 'ws://155.138.220.54/api_socket/websocket?vsn=2.0.0',
-    host: 'prod.gateway.mygeepay.com',
+    host: 'uat.gateway.mygeepay.com',
     dbName: 'geepay.pos.dev.db',
     initScript: initialScript,
     migrations: migrationScript,

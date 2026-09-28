@@ -5,7 +5,7 @@ enum CurrentStatus {
   other,
   success,
   uploading,
-  complete
+  complete,
 }
 
 enum CurrentStep { one, two, three, four, five, six, seven, eight, nine, ten }

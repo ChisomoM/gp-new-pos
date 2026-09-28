@@ -1,5 +1,0 @@
-package com.example.verygoodcore.geepay_pos
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()

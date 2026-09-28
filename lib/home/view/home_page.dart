@@ -1,6 +1,8 @@
+import 'package:auth_repo/auth_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
 import 'package:geepay_pos/home/widgets/home_body.dart';
+import 'package:services_repo/services_repo.dart';
 
 /// {@template home_page}
 /// A description for HomePage
@@ -17,8 +19,12 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => HomeCubit(),
+      create: (context) => HomeCubit(
+        context.read<ServicesRepo>(),
+        context.read<AuthRepo>(),
+      ),
       child: const Scaffold(
+        backgroundColor: Color(0xFFF9FAFB),
         body: HomeView(),
       ),
     );

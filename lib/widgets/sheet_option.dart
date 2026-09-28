@@ -27,8 +27,9 @@ class SheetOption extends StatelessWidget {
     }
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      tileColor:
-          isDark ? theme.surfaceContainerHighest : theme.surfaceContainer,
+      tileColor: isDark
+          ? theme.surfaceContainerHighest
+          : theme.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       leading: Container(
         decoration: BoxDecoration(

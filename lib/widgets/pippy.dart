@@ -21,10 +21,11 @@ class Pippy extends StatelessWidget {
         height: height,
         width: width,
         decoration: BoxDecoration(
-          color: color ??
+          color:
+              color ??
               Theme.of(context).colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.4,
-                  ),
+                alpha: 0.4,
+              ),
           borderRadius: BorderRadius.circular(radius),
         ),
       ),

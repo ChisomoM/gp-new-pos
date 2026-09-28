@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
-import 'firebase_options.dart';
+import 'package:geepay_pos/firebase_options.dart';
 
 /// {@template firebase_config}
 /// Configuration for Firebase services.

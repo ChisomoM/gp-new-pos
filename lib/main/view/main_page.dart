@@ -15,7 +15,10 @@ class MainPage extends StatefulWidget {
 
   /// The static route for MainPage
   static Route<dynamic> route() {
-    return MaterialPageRoute<dynamic>(builder: (_) => const MainPage());
+    return MaterialPageRoute<dynamic>(
+      settings: const RouteSettings(name: '/dashboard'),
+      builder: (_) => const MainPage(),
+    );
   }
 
   @override

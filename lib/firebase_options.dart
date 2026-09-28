@@ -70,9 +70,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '230543562412',
     projectId: 'zicta-tariff-comparator',
     storageBucket: 'zicta-tariff-comparator.firebasestorage.app',
-    androidClientId: '230543562412-4sqm7p6odnpo6r6sdcdp88gmejnr1jeb.apps.googleusercontent.com',
-    iosClientId: '230543562412-hmkabnknisqu6dffsq64hj0lfc1c1iad.apps.googleusercontent.com',
+    androidClientId:
+        '230543562412-4sqm7p6odnpo6r6sdcdp88gmejnr1jeb.apps.googleusercontent.com',
+    iosClientId:
+        '230543562412-hmkabnknisqu6dffsq64hj0lfc1c1iad.apps.googleusercontent.com',
     iosBundleId: 'zm.zicta.tarriffcomparator',
   );
-
 }

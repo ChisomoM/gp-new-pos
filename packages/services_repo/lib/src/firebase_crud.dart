@@ -83,13 +83,10 @@ class FirebaseCrudService {
         switch (operator) {
           case QueryOperator.equalTo:
             query = query.where(field, isEqualTo: value);
-            break;
           case QueryOperator.greaterThan:
             query = query.where(field, isGreaterThan: value);
-            break;
           case QueryOperator.lessThan:
             query = query.where(field, isLessThan: value);
-            break;
           // Add more operators as needed
         }
       }

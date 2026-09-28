@@ -6,6 +6,7 @@ abstract class AppEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
 class AppOpened extends AppEvent {
   const AppOpened({this.getNotifications = true});
 
@@ -14,7 +15,9 @@ class AppOpened extends AppEvent {
   @override
   List<Object> get props => [getNotifications];
 }
+
 class AppUpdatePrompted extends AppEvent {}
+
 class AppNotificationReceived extends AppEvent {
   const AppNotificationReceived(this.data);
 
@@ -23,6 +26,7 @@ class AppNotificationReceived extends AppEvent {
   @override
   List<Object> get props => [data];
 }
+
 class AppEventTracked extends AppEvent {
   const AppEventTracked(this.event);
 

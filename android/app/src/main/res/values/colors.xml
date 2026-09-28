@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- gp-navy — Geepay hero/splash background (design spec §1) -->
+    <color name="gp_navy">#FF080C30</color>
+</resources>

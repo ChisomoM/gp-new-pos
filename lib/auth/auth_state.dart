@@ -4,8 +4,8 @@ class AuthState extends Equatable {
   const AuthState({
     this.status = AuthStatus.unknown,
     this.user = User.empty,
-      this.appVersion = '',
-      this.userDetails,
+    this.appVersion = '',
+    this.userDetails,
   });
 
   final AuthStatus status;

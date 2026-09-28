@@ -1,34 +1,40 @@
+import 'package:flutter/widgets.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
+
 class AppIcons {
   /// Service Icons
-  static String settings = 'assets/svg/Settings.svg';
-  static String services = 'assets/svg/services.svg';
-  static String aboutUs = 'assets/svg/About.svg';
+  static const IconData settings = Iconsax.setting_2;
+  static const IconData services = Iconsax.category;
+  static const IconData aboutUs = Iconsax.info_circle;
 
-  static String home = 'assets/svg/home.svg';
-  static String logout = 'assets/svg/logout.svg';
-  static String pin = 'assets/svg/pin_icon.svg';
-  static String help = 'assets/svg/help.svg';
-  static String rate = 'assets/svg/Rate.svg';
-  static String editPin = 'assets/svg/change-pin.svg';
-  static String more = 'assets/svg/more.svg';
-  static String terms = 'assets/svg/t&c.svg';
-  static String blockAccount = 'assets/svg/block-account.svg';
-  static String termsAndConditions = 'assets/svg/terms_and_conditions.svg';
+  static const IconData home = Iconsax.home;
+  static const IconData logout = Iconsax.logout;
+  static const IconData pin = Iconsax.lock;
+  static const IconData help = Iconsax.message_question;
+  static const IconData rate = Iconsax.star;
+  static const IconData editPin = Iconsax.edit;
+  static const IconData more = Iconsax.more;
+  static const IconData terms = Iconsax.document;
+  static const IconData blockAccount = Iconsax.danger;
+  static const IconData termsAndConditions = Iconsax.document;
 
   /// Standard Icons
   static String profile = 'assets/images/user-4.png';
-  static String bell = 'assets/svg/no_alerts.svg';
-  static String bellOn = 'assets/svg/with_alerts.svg';
-  static String qrCode = 'assets/svg/qrcode.svg';
-  static String checkCircle = 'assets/svg/check-circle-Filled.svg';
-  static String switchIcon = 'assets/svg/switch.svg';
-  static String calendar = 'assets/svg/calendar.svg';
-  static String filter = 'assets/svg/filter.svg';
+  static const IconData bell = Iconsax.notification;
+  static const IconData bellOn = Iconsax.notification_bing;
+  static const IconData qrCode = Iconsax.scan_barcode;
+  static const IconData checkCircle = Iconsax.tick_circle;
+  static const IconData switchIcon = Iconsax.repeat;
+  static const IconData calendar = Iconsax.calendar;
+  static const IconData filter = Iconsax.filter;
   static String enterPin = 'assets/svg/enter_pin.svg';
   static String verifyPhone = 'assets/svg/verify_phone.svg';
 
   /// App Logos
   static String appLogo = 'assets/svg/zicta_logo.svg';
+
+  /// Logo printed at the bottom of Bluetooth/thermal receipts.
+  static String receiptLogo = 'assets/logos/geepay-g-mark.png';
   static String oops = 'assets/svg/oops.svg';
   static String onWhite = 'assets/svg/zed-money-on-white.svg';
   static String onBlue = 'assets/svg/zed-money-on-blue.svg';

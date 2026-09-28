@@ -6,7 +6,7 @@ part 'net_response.g.dart';
 class NetResponse {
   /// {@macro net_response}
   const NetResponse({
-    required this.message,
+    this.message,
     this.data,
     this.status,
     this.success,
@@ -16,7 +16,7 @@ class NetResponse {
   final dynamic data;
 
   /// A message describing the status of the response
-  final String message;
+  final String? message;
 
   /// an int status, 0 for success, 1 for failure (legacy backend convention)
   final int? status;
@@ -26,7 +26,19 @@ class NetResponse {
   final bool? success;
 
   /// Deserializes the given [JsonMap] into a [NetResponse].
-  static NetResponse fromJson(JsonMap json) => _$NetResponseFromJson(json);
+  ///
+  /// Some endpoints send `status` as a legacy int (`0`/`1`) while others
+  /// (e.g. auth failures like `{"status": "failed"}`) send it as a string,
+  /// so it's normalized to an int before handing off to the generated
+  /// parser to avoid a type-cast crash.
+  static NetResponse fromJson(JsonMap json) {
+    final rawStatus = json['status'];
+    final normalized = Map<String, dynamic>.from(json);
+    if (rawStatus is String) {
+      normalized['status'] = int.tryParse(rawStatus);
+    }
+    return _$NetResponseFromJson(normalized);
+  }
 
   /// Check whether network request was successful.
   ///

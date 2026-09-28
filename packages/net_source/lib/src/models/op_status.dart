@@ -15,7 +15,7 @@ class OpStatus {
   /// Returns a [OpStatus] representation from a [NetResponse].
   factory OpStatus.fromResponse(NetResponse response) {
     return OpStatus(
-      message: response.message,
+      message: response.message ?? '',
       success: response.isSuccessful(),
       data: response.data,
       code: response.status,

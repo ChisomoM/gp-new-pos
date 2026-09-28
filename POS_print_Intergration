@@ -1,0 +1,1441 @@
+# 🖨️ Printing Integration — Bluetooth (ESC/POS) + Trendit / Topwise Built-in SDKs
+
+How receipt printing works in this app, and what to copy over when porting the
+feature into another Flutter project.
+
+---
+
+## 1. Overview
+
+The app can print a receipt three ways, and the user picks which one(s) to use
+from **Printer Settings**:
+
+| Backend | Used when | Talks to |
+|---|---|---|
+| **Built-in printer — Trendit** | Device is a Trendit POS terminal | `com.trendit.basesdk.device.printer.*` (native Android SDK, bundled as a `.jar`) |
+| **Built-in printer — Topwise** | Device is a Topwise POS terminal | `com.topwise.cloudpos.aidl.printer.*` (native Android SDK via AIDL, bundled as a `.jar`) |
+| **External Bluetooth printer** | Any external ESC/POS thermal printer, on any device | `print_bluetooth_thermal` + `esc_pos_utils_plus` (pure Dart/Flutter plugin, no native SDK) |
+
+The two built-in SDKs are mutually exclusive per physical device (a terminal
+is either Trendit or Topwise hardware), so the native Android code detects
+which SDK is actually available at runtime and routes to the right one. The
+Bluetooth path is entirely separate — it's a generic ESC/POS implementation
+that works on any phone/tablet paired with any thermal printer, independent
+of which POS hardware (or none) the app is running on.
+
+### Data flow
+
+```
+Flutter (Dart)                                   Android (native)
+───────────────                                   ─────────────────
+PrinterDispatch.run(...)
+   │
+   ├── printBuiltin() ──► PrintHelper.printReceipt()
+   │                         │  (MethodChannel: com.example.pos_mobile/print)
+   │                         ▼
+   │                     MainActivity's channel handler
+   │                         │
+   │                         ├─ TopwisePrinterHelper.getPrinterIfAvailable()
+   │                         │     found? ──► TopwisePrinterHelper.printReceipt(...)
+   │                         │
+   │                         └─ not found ──► falls through to the existing
+   │                                          inline Trendit `printerDevice` code
+   │                                          in MainActivity.java
+   │
+   └── printBluetooth() ──► BluetoothPrinterHelper.printReceipt()
+                                │ (pure Dart, esc_pos_utils_plus + print_bluetooth_thermal)
+                                ▼
+                            PrintBluetoothThermal.writeBytes(...)  → paired BT printer
+```
+
+`PrinterDispatch` + `PrinterPreference` decide **which** backend(s) a call site
+uses; each backend's actual printing code is otherwise unaware of the other.
+
+---
+
+## 2. Bluetooth (ESC/POS) printing — pure Flutter, no native SDK
+
+**Files (already copied):**
+- `lib/utils/helpers/bluetooth_printer_helper.dart` — builds ESC/POS byte
+  commands (`esc_pos_utils_plus`) and sends them over
+  `print_bluetooth_thermal`. Mirrors the same receipt layouts as the native
+  helpers (`printReceipt`, `printZescoReceipt`, `printDailySummary`).
+- `lib/utils/helpers/printer_preference.dart` — persists (via `GetStorage`)
+  the user's chosen default printer (`builtin` / `bluetooth` / `both`), the
+  "both" ordering mode (`simultaneous` / `sequential`), and the selected
+  Bluetooth device's MAC address + name.
+- `lib/utils/helpers/printer_dispatch.dart` — given a `printBuiltin` closure
+  and a `printBluetooth` closure, decides which one(s) to call based on
+  `PrinterPreference`.
+
+**Pubspec dependencies required:**
+```yaml
+print_bluetooth_thermal: ^1.2.2
+esc_pos_utils_plus: ^2.0.4
+image: ^4.2.0
+permission_handler: ^12.0.0+1
+get_storage: ^2.1.1
+```
+
+**Android manifest permissions required** (`android/app/src/main/AndroidManifest.xml`):
+```xml
+<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+```
+(Location permissions are also typically needed for BT device scanning on
+older Android versions — this project already requests
+`ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION` for other reasons, so check
+whether the target project needs them added too.)
+
+**Other things this helper depends on that you'll need in the new project:**
+- `APPLoaders` — used for success/error snackbars. Swap for whatever
+  notification helper the new project uses, or copy the class below as-is
+  (`lib/common/widgets/loaders/loaders.dart`).
+- `APPImages.lightAppLogo` and the actual logo asset — used to print the
+  receipt logo. Point this at the new project's own logo asset (or add the
+  one-line constant below to your own image-strings file).
+- A **Printer Settings** screen to let the user pick a paired device and a
+  default backend. Not required for the helper to function, but required for
+  a user to ever be able to select a Bluetooth printer — full code below.
+
+This path needs **no native/Android code changes** — it's 100% Dart plugin
+based, so it works in a plain Flutter project immediately once the
+dependencies above are added.
+
+### 3a. `lib/common/widgets/loaders/loaders.dart` (or your own equivalent)
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:pos_mobile/utils/constants/colors.dart';
+import 'package:pos_mobile/utils/helpers/helper_functions.dart';
+
+class APPLoaders {
+  static hideSnackBar() =>
+      ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
+
+  static customToast({required message}) {
+    ScaffoldMessenger.of(Get.context!).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        duration: const Duration(seconds: 3),
+        backgroundColor: Colors.transparent,
+        content: Container(
+          padding: const EdgeInsets.all(12.0),
+          margin: const EdgeInsets.symmetric(horizontal: 30),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            color: APPHelperFunctions.isDarkMode(Get.context!)
+                ? APPColors.darkGrey.withAlpha((0.9 * 255).toInt())
+                : APPColors.grey.withAlpha((0.9 * 255).toInt()),
+          ),
+          child: Center(
+            child: Text(
+              message,
+              style: Theme.of(Get.context!).textTheme.labelLarge,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static successSnackBar({required title, message = '', duration = 3}) {
+    Get.snackbar(
+      title,
+      message,
+      isDismissible: true,
+      shouldIconPulse: true,
+      colorText: APPColors.white,
+      backgroundColor: APPColors.success,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: Duration(seconds: duration),
+      margin: const EdgeInsets.all(20),
+      icon: const Icon(
+        Iconsax.check,
+        color: APPColors.white,
+      ),
+    );
+  }
+
+  static warningSnackBar({required title, message = ''}) {
+    Get.snackbar(
+      title,
+      message,
+      isDismissible: true,
+      shouldIconPulse: true,
+      colorText: APPColors.white,
+      backgroundColor: Colors.orange,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(20),
+      icon: const Icon(
+        Iconsax.warning_2,
+        color: APPColors.white,
+      ),
+    );
+  }
+
+  static errorSnackBar({required title, message = ''}) {
+    Get.snackbar(
+      title,
+      message,
+      isDismissible: true,
+      shouldIconPulse: true,
+      colorText: APPColors.white,
+      backgroundColor: Colors.red.shade600,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(20),
+      icon: const Icon(
+        Iconsax.warning_2,
+        color: APPColors.white,
+      ),
+    );
+  }
+}
+```
+
+This one depends on `get` (GetX, already a dependency), `iconsax`, and two
+tiny project helpers (`APPColors`, `APPHelperFunctions.isDarkMode`) — swap
+those for the new project's own color/theme helpers if it doesn't already
+have GetX-based snackbars.
+
+### 3b. Logo asset constant
+
+Add wherever the new project keeps its image path constants:
+
+```dart
+static const String lightAppLogo = "assets/logos/gpay_logo_transaparent.png";
+```
+
+...pointing at the new project's own logo file (declared under `assets:` in
+`pubspec.yaml`).
+
+### 3c. `lib/features/Home/screens/printer_settings/printer_settings_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:pos_mobile/common/appbar/appbar.dart';
+import 'package:pos_mobile/utils/constants/sizes.dart';
+import 'package:pos_mobile/utils/helpers/bluetooth_printer_helper.dart';
+import 'package:pos_mobile/utils/helpers/printer_preference.dart';
+
+class PrinterSettingsScreen extends StatefulWidget {
+  const PrinterSettingsScreen({super.key});
+
+  @override
+  State<PrinterSettingsScreen> createState() => _PrinterSettingsScreenState();
+}
+
+class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
+  late PrinterChoice _printerChoice;
+  late PrintBothMode _bothMode;
+  String? _selectedMac;
+  List<BluetoothInfo> _pairedDevices = [];
+  bool _loadingDevices = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _printerChoice = PrinterPreference.getDefault();
+    _bothMode = PrinterPreference.getBothMode();
+    _selectedMac = PrinterPreference.getBluetoothAddress();
+    if (_needsBluetooth) {
+      _loadPairedDevices();
+    }
+  }
+
+  bool get _needsBluetooth => _printerChoice != PrinterChoice.builtin;
+
+  Future<void> _loadPairedDevices() async {
+    setState(() => _loadingDevices = true);
+    final devices = await BluetoothPrinterHelper.getPairedDevices();
+    if (!mounted) return;
+    setState(() {
+      _pairedDevices = devices;
+      _loadingDevices = false;
+    });
+  }
+
+  void _onChoiceChanged(PrinterChoice? choice) {
+    if (choice == null) return;
+    setState(() => _printerChoice = choice);
+    PrinterPreference.setDefault(choice);
+    if (choice != PrinterChoice.builtin && _pairedDevices.isEmpty) {
+      _loadPairedDevices();
+    }
+  }
+
+  void _onBothModeChanged(PrintBothMode? mode) {
+    if (mode == null) return;
+    setState(() => _bothMode = mode);
+    PrinterPreference.setBothMode(mode);
+  }
+
+  void _onDeviceSelected(BluetoothInfo device) {
+    setState(() => _selectedMac = device.macAdress);
+    PrinterPreference.setBluetoothDevice(device.macAdress, device.name);
+  }
+
+  Future<void> _testPrint() async {
+    await BluetoothPrinterHelper.printReceipt(const {
+      'businessName': 'Geepay',
+      'branchName': 'Test Branch',
+      'username': 'Test Cashier',
+      'amount': '10.00',
+      'phone': '0000000000',
+      'paymentChannel': 'Test',
+      'transactionId': 'TEST-0001',
+      'date': '',
+      'status': 'successful',
+      'isReprint': 'false',
+      'reprintCount': '1',
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: APPAPPBar(
+        showBackArrow: true,
+        title: Text('Printer Settings', style: Theme.of(context).textTheme.headlineSmall),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(APPSizes.defaultSpace),
+        children: [
+          Text('Default Printer', style: Theme.of(context).textTheme.titleMedium),
+          RadioListTile<PrinterChoice>(
+            title: const Text('Built-in Printer'),
+            value: PrinterChoice.builtin,
+            groupValue: _printerChoice,
+            onChanged: _onChoiceChanged,
+          ),
+          RadioListTile<PrinterChoice>(
+            title: const Text('Bluetooth Printer'),
+            value: PrinterChoice.bluetooth,
+            groupValue: _printerChoice,
+            onChanged: _onChoiceChanged,
+          ),
+          RadioListTile<PrinterChoice>(
+            title: const Text('Both'),
+            value: PrinterChoice.both,
+            groupValue: _printerChoice,
+            onChanged: _onChoiceChanged,
+          ),
+          if (_printerChoice == PrinterChoice.both) ...[
+            const SizedBox(height: APPSizes.spaceBtwItem),
+            Text('When printing to both', style: Theme.of(context).textTheme.titleMedium),
+            RadioListTile<PrintBothMode>(
+              title: const Text('Print one after the other'),
+              value: PrintBothMode.sequential,
+              groupValue: _bothMode,
+              onChanged: _onBothModeChanged,
+            ),
+            RadioListTile<PrintBothMode>(
+              title: const Text('Print simultaneously'),
+              value: PrintBothMode.simultaneous,
+              groupValue: _bothMode,
+              onChanged: _onBothModeChanged,
+            ),
+          ],
+          if (_needsBluetooth) ...[
+            const SizedBox(height: APPSizes.spaceBtwSections),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Paired Bluetooth Devices', style: Theme.of(context).textTheme.titleMedium),
+                IconButton(
+                  onPressed: _loadPairedDevices,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+            if (_loadingDevices)
+              const Padding(
+                padding: EdgeInsets.all(APPSizes.defaultSpace),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_pairedDevices.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: APPSizes.spaceBtwItem),
+                child: Text(
+                    'No paired Bluetooth devices found. Pair a printer in your device Bluetooth settings first, then refresh.'),
+              )
+            else
+              ..._pairedDevices.map(
+                (device) => RadioListTile<String>(
+                  title: Text(device.name),
+                  subtitle: Text(device.macAdress),
+                  value: device.macAdress,
+                  groupValue: _selectedMac,
+                  onChanged: (_) => _onDeviceSelected(device),
+                ),
+              ),
+            if (_selectedMac != null) ...[
+              const SizedBox(height: APPSizes.spaceBtwItem),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _testPrint,
+                  child: const Text('Test Print'),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+```
+
+This one depends on `APPAPPBar` (a custom app bar widget) and `APPSizes`
+(spacing constants) — replace those two with the new project's own
+equivalents, or drop them for plain `AppBar`/hardcoded padding.
+
+---
+
+## 3. Built-in printer — Trendit SDK (native Android)
+
+Trendit terminals expose a `PrinterDevice` obtained from
+`POSDeviceManager`. This project's existing (untouched) implementation lives
+inline in `MainActivity.java` plus `PrinterHelper.java`.
+
+**Files to copy:**
+- `android/app/src/main/java/com/example/pos_mobile/PrinterHelper.java` (full code below)
+- The Trendit-specific `printReceipt` / `printZescoReceipt` / `printDailySummary`
+  blocks, and `printerDevice` initialization, inside `MainActivity.java` (full
+  code below)
+- The Trendit SDK jar: `android/app/libs/basesdk-sources.jar`, plus whatever
+  jar/aar your Trendit SDK distribution actually provides for the target
+  device model (check `build.gradle` — see below).
+
+### 3d. `android/app/src/main/java/com/example/pos_mobile/PrinterHelper.java`
+
+```java
+package com.example.pos_mobile;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.app.Activity;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+
+import com.trendit.basesdk.device.printer.OnPrintTaskListener;
+import com.trendit.basesdk.device.printer.PrinterConstants;
+import com.trendit.basesdk.device.printer.PrinterDevice;
+import com.trendit.basesdk.device.printer.format.PrintAlign;
+import com.trendit.basesdk.device.printer.format.PrintFontSize;
+import com.trendit.basesdk.device.printer.format.TextFormat;
+import com.trendit.basesdk.device.printer.format.BitmapFormat;
+import io.flutter.plugin.common.MethodChannel;
+
+public class PrinterHelper {
+
+    private PrinterDevice printerDevice;
+
+    private Activity activity;  // Store the Activity context
+
+    // Constructor to pass the Activity context
+    public PrinterHelper(Activity activity) {
+        this.activity = activity;
+    }
+
+    private void runOnUiThread(Runnable runnable) {
+        if (activity != null) {
+            activity.runOnUiThread(runnable);  // Use the Activity's runOnUiThread method
+        }
+    }
+
+    private Bitmap getLogoBitmap() {
+        if (activity != null) {
+            return BitmapFactory.decodeResource(activity.getResources(), R.drawable.logo);  // Use activity to get resources
+        }
+        return null;
+    }
+
+    public void printImage(byte[] imageData, MethodChannel.Result result) {
+        Bitmap originalBitmap = getLogoBitmap();  // Get the logo bitmap
+        if (originalBitmap != null) {
+            int printerWidth = 100;
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth,
+                    (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth())), false);
+            if (resizedBitmap != null) {
+                BitmapFormat bitmapFormat = new BitmapFormat();
+                bitmapFormat.setAlign(PrintAlign.FORMAT_ALIGN_CENTER);
+                printerDevice.printBitmap(bitmapFormat, resizedBitmap);
+            }
+        }
+
+        printerDevice.startPrint(new OnPrintTaskListener() {
+            @Override
+            public void onPrintResult(int status) {
+                runOnUiThread(() -> {
+                    if (status == PrinterConstants.TASK_STATUS_SUCCESS) {
+                        result.success("Image printed successfully");
+                    } else {
+                        result.error("PRINT_FAILED", "Failed to print image", null);
+                    }
+                });
+            }
+        });
+    }
+
+    public void printZescoReceipt(Map<String, String> receiptDetails, MethodChannel.Result result) {
+        if (printerDevice != null) {
+            printerDevice.clear();
+
+            String businessName = receiptDetails.get("businessName");
+            String token = receiptDetails.get("token");
+            String meterNumber = receiptDetails.get("meterNumber");
+            String numberOfUnits = receiptDetails.get("numberOfUnits");
+            String amountPaid = receiptDetails.get("amountPaid");
+            String vat = receiptDetails.get("vat");
+            String transactionDate = getPrinterTime(); // Current time for the transaction
+
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_EXTRA_LARGE),
+                    businessName + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Token: " + token + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Meter Number: " + meterNumber + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Number of Units: " + numberOfUnits + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Amount Paid: " + amountPaid + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "VAT: " + vat + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Transaction Date: " + transactionDate + "\n\n");
+
+            printerDevice.printDottedLines(null, 1);
+
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Thank you for your purchase!\n\n\n");
+
+            Bitmap originalBitmap = getLogoBitmap();  // Get the logo bitmap
+            if (originalBitmap != null) {
+                int printerWidth = 100;
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth,
+                        (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth())), false);
+                if (resizedBitmap != null) {
+                    BitmapFormat bitmapFormat = new BitmapFormat();
+                    bitmapFormat.setAlign(PrintAlign.FORMAT_ALIGN_CENTER);
+                    printerDevice.printBitmap(bitmapFormat, resizedBitmap);
+                }
+            }
+
+            printerDevice.printText(null, "\n\n");
+            printerDevice.printText(null, "\n\n\n\n\n");
+
+            printerDevice.startPrint(new OnPrintTaskListener() {
+                @Override
+                public void onPrintResult(int i) {
+                    runOnUiThread(() -> {
+                        if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
+                            result.success("Zesco receipt printed successfully");
+                        } else {
+                            result.error("PRINT_FAILED", "Failed to print Zesco receipt", null);
+                        }
+                    });
+                }
+            });
+        } else {
+            result.error("UNAVAILABLE", "Printer not available", null);
+        }
+    }
+
+    public void printReceipt(Map<String, String> receiptDetails, MethodChannel.Result result) {
+        if (printerDevice != null) {
+            printerDevice.clear();
+
+            String businessName = (String) receiptDetails.get("businessName");
+
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_EXTRA_LARGE),
+                    businessName + "\n\n");
+
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Amount: " + receiptDetails.get("amount") + "\n\n");
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Phone: " + receiptDetails.get("phone") + "\n\n");
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Payment Channel: " + receiptDetails.get("paymentChannel") + "\n\n");
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Transaction ID: " + receiptDetails.get("transactionId") + "\n\n");
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Date: " + receiptDetails.get("date") + "\n\n");
+            printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                    "Status: " + receiptDetails.get("status") + "\n\n");
+
+            printerDevice.printDottedLines(null, 1);
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Thank you for your purchase!\n\n\n");
+
+            Bitmap originalBitmap = getLogoBitmap();  // Get the logo bitmap
+            if (originalBitmap != null) {
+                int printerWidth = 100;
+                Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth,
+                        (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth())), false);
+                if (resizedBitmap != null) {
+                    BitmapFormat bitmapFormat = new BitmapFormat();
+                    bitmapFormat.setAlign(PrintAlign.FORMAT_ALIGN_CENTER);
+                    printerDevice.printBitmap(bitmapFormat, resizedBitmap);
+                }
+            }
+
+            printerDevice.printText(null, "\n\n");
+            printerDevice.printText(null, "\n\n\n\n\n");
+            printerDevice.startPrint(new OnPrintTaskListener() {
+                @Override
+                public void onPrintResult(int i) {
+                    runOnUiThread(() -> {
+                        if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
+                            result.success("Receipt printed successfully");
+                        } else {
+                            result.error("PRINT_FAILED", "Failed to print receipt", null);
+                        }
+                    });
+                }
+            });
+        } else {
+            result.error("UNAVAILABLE", "Printer not available", null);
+        }
+    }
+
+    private String getPrinterTime() {
+        String pattern = "yyyy-MM-dd HH:mm:ss";
+        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern, Locale.getDefault());
+        return dateFormat.format(new Date(System.currentTimeMillis()));
+    }
+
+    private TextFormat getTextFormat(PrintAlign align, int fontSize) {
+        TextFormat format = new TextFormat();
+        format.setAlign(align);
+        format.setFontSize(fontSize);
+        return format;
+    }
+}
+```
+
+> Trimmed the large blocks of commented-out dead code that existed in the
+> original file — behavior is unchanged, this is just the live code.
+
+**`android/app/build.gradle` dependencies:**
+```gradle
+implementation files('libs/basesdk-sources.jar')
+implementation files('libs/gson-2.8.5.jar')   // Trendit SDK dependency
+```
+> ⚠️ This project's `build.gradle` also has a leftover
+> `implementation fileTree(dir: 'C:\\Users\\HackerDND\\...')` line pointing at
+> another developer's local machine path — don't copy that, it's dead/broken
+> and the explicit `implementation files(...)` lines already cover the real
+> jars.
+
+**Android manifest:** no extra permissions beyond what's already listed for
+storage/camera/etc. in this project — the Trendit SDK talks to the terminal's
+built-in hardware service, not Bluetooth.
+
+---
+
+## 4. Built-in printer — Topwise SDK (native Android, AIDL)
+
+Topwise terminals expose printing via `AidlPrinter`, obtained from
+`DeviceServiceManager` (Topwise's `TOPUSDK`/`cloudpos` AIDL service). This was
+added **without touching** the existing Trendit code path — `MainActivity`
+tries Topwise first and falls back to the inline Trendit code if unavailable.
+
+**Files to copy:**
+- `android/app/src/main/java/com/example/pos_mobile/TopwisePrinterHelper.java`
+  (full code below) — self-contained: builds a `PrintTemplate` (business
+  name, fields, divider, logo) and renders it as a bitmap via
+  `AidlPrinter.addRuiImage` / `printRuiQueue`.
+- In `MainActivity.java`: the `TopwisePrinterHelper.getPrinterIfAvailable()`
+  check at the top of each of `printReceipt` / `printZescoReceipt` /
+  `printDailySummary`, and the `import com.topwise.cloudpos.aidl.printer.AidlPrinter;`
+  import (see full `MainActivity.java` glue in section 5 below).
+- The Topwise SDK jar: `android/app/libs/topwise/T1_V2_20260326.jar`
+  (device/firmware-specific — get the matching jar for the target Topwise
+  model/SDK version from Topwise).
+- `R.drawable.logo` — same drawable resource the Trendit/Bluetooth paths use
+  for the receipt logo; make sure it exists in the target project's
+  `android/app/src/main/res/drawable/`.
+- Reference docs/demo (not code to ship, just for API reference when
+  adapting): `POS intergration/TopUsdkService-Doc-20240628/` (AIDL Javadoc)
+  and `POS intergration/TopUsdkTestDemo20260515/` (sample app).
+
+**`android/app/build.gradle` dependency:**
+```gradle
+// Topwise TOPUSDK printer SDK (com.topwise.cloudpos.*) -- used only when the
+// app is running on Topwise POS hardware, see TopwisePrinterHelper.
+// NOTE: libs/topwise/core-3.2.1.jar is intentionally excluded -- it duplicates
+// classes already in libs/zxing.jar, causing a "Duplicate class" build failure.
+implementation files('libs/topwise/T1_V2_20260326.jar')
+```
+Only `T1_V2_20260326.jar` is included — **do not** also add
+`core-3.2.1.jar` from the same folder; it was deliberately left out because it
+duplicates classes already pulled in by `libs/zxing.jar` and breaks the build.
+
+**No `.aidl` source files are needed** — the AIDL stub classes
+(`AidlPrinter`, `AidlPrinterListener`, `PrintTemplate`, `TextUnit`, `Align`,
+`ImageUnit`, `DeviceServiceManager`, …) come precompiled inside the jar.
+
+**Android manifest:** no extra permissions — Topwise's `DeviceServiceManager`
+binds to the vendor's own system service internally.
+
+### 4a. `android/app/src/main/java/com/example/pos_mobile/TopwisePrinterHelper.java`
+
+```java
+package com.example.pos_mobile;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.RemoteException;
+import android.util.Log;
+
+import com.topwise.cloudpos.aidl.printer.Align;
+import com.topwise.cloudpos.aidl.printer.AidlPrinter;
+import com.topwise.cloudpos.aidl.printer.AidlPrinterListener;
+import com.topwise.cloudpos.aidl.printer.ImageUnit;
+import com.topwise.cloudpos.aidl.printer.PrintTemplate;
+import com.topwise.cloudpos.aidl.printer.TextUnit;
+import com.topwise.cloudpos.service.DeviceServiceManager;
+
+import java.util.List;
+import java.util.Map;
+
+import io.flutter.plugin.common.MethodChannel;
+
+/**
+ * Topwise built-in-printer backend. Only used when this device is running on
+ * Topwise POS hardware -- see {@link #getPrinterIfAvailable()}. Mirrors the
+ * field layout of MainActivity's Trendit printReceipt / printZescoReceipt /
+ * printDailySummary methods, translated to the Topwise AidlPrinter/PrintTemplate
+ * API instead of sharing code with that (untouched) Trendit path.
+ */
+final class TopwisePrinterHelper {
+
+    private static final String TAG = "TopwisePrinterHelper";
+    private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+
+    private TopwisePrinterHelper() {
+    }
+
+    /** Returns the Topwise printer manager if this is Topwise POS hardware, else null. */
+    static AidlPrinter getPrinterIfAvailable() {
+        try {
+            return DeviceServiceManager.getInstance().getPrintManager();
+        } catch (Throwable t) {
+            Log.w(TAG, "Topwise print manager unavailable", t);
+            return null;
+        }
+    }
+
+    static void printReceipt(Context context, AidlPrinter printer, Map<String, String> receiptDetails,
+            MethodChannel.Result result) {
+        String isReprintFlag = receiptDetails.get("isReprint");
+        boolean isReprint = isReprintFlag != null && isReprintFlag.equals("true");
+        String reprintCountStr = receiptDetails.get("reprintCount");
+        int reprintCount = 1;
+        try {
+            reprintCount = Integer.parseInt(reprintCountStr);
+        } catch (Exception ignored) {
+        }
+
+        PrintTemplate template = beginTemplate(context);
+        addLine(template, receiptDetails.get("businessName"), TextUnit.TextSize.XLARGE, Align.CENTER);
+        addLine(template, receiptDetails.get("branchName"), TextUnit.TextSize.LARGE, Align.CENTER);
+        addBlank(template);
+        addLine(template, "Cashier: " + receiptDetails.get("username"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Amount: " + receiptDetails.get("amount"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Phone: " + receiptDetails.get("phone"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Payment Channel: " + receiptDetails.get("paymentChannel"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Transaction ID: " + receiptDetails.get("transactionId"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Date: " + receiptDetails.get("date"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Status: " + receiptDetails.get("status"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addBlank(template);
+        if (isReprint) {
+            addLine(template, "*** REPRINT COPY ***", TextUnit.TextSize.NORMAL, Align.CENTER);
+            addLine(template, "Printed " + reprintCount + " time(s)", TextUnit.TextSize.SMALL, Align.CENTER);
+            addBlank(template);
+        }
+        addDivider(template);
+        addLine(template, "Thank you for your purchase!", TextUnit.TextSize.NORMAL, Align.CENTER);
+        addBlank(template);
+        addLine(template, "Powered by", TextUnit.TextSize.NORMAL, Align.CENTER);
+        addLogo(context, template);
+        addBlank(template);
+        addBlank(template);
+
+        finishPrint(printer, template, result, "Receipt printed successfully", "Failed to print receipt");
+    }
+
+    static void printZescoReceipt(Context context, AidlPrinter printer, Map<String, String> receiptDetails,
+            MethodChannel.Result result) {
+        PrintTemplate template = beginTemplate(context);
+        addLine(template, receiptDetails.get("businessName"), TextUnit.TextSize.XLARGE, Align.CENTER);
+        addLine(template, receiptDetails.get("branchName"), TextUnit.TextSize.LARGE, Align.CENTER);
+        addBlank(template);
+        addLine(template, "Cashier: " + receiptDetails.get("username"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Customer Name: " + receiptDetails.get("customerName"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Address: " + receiptDetails.get("address"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Token: " + receiptDetails.get("token"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Meter Number: " + receiptDetails.get("meterNumber"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Number of Units: " + receiptDetails.get("numberOfUnits"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Kwh Amount: " + receiptDetails.get("kwhAmount"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Amount Paid: " + receiptDetails.get("amountPaid"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "VAT: " + receiptDetails.get("vat"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Voucher Serial: " + receiptDetails.get("serialNumber"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Transaction Date: " + receiptDetails.get("date"), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addDivider(template);
+        addBlank(template);
+        addLine(template, "Thank you for your purchase!", TextUnit.TextSize.NORMAL, Align.CENTER);
+        addBlank(template);
+        addLine(template, "Powered by", TextUnit.TextSize.NORMAL, Align.CENTER);
+        addLogo(context, template);
+        addBlank(template);
+        addBlank(template);
+
+        finishPrint(printer, template, result, "Zesco receipt printed successfully", "Failed to print Zesco receipt");
+    }
+
+    static void printDailySummary(Context context, AidlPrinter printer, List<Map<String, String>> transactions,
+            MethodChannel.Result result) {
+        int successCount = 0;
+        int failedCount = 0;
+        int totalCount = 0;
+        double totalAmount = 0.0;
+
+        PrintTemplate template = beginTemplate(context);
+        addLine(template, "Daily Transaction Summary", TextUnit.TextSize.LARGE, Align.CENTER);
+        addBlank(template);
+
+        for (Map<String, String> txn : transactions) {
+            totalCount++;
+            addLine(template, "Business: " + txn.get("businessName"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "Cashier: " + txn.get("cashier"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "ID: " + txn.get("transactionId"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "Amount: K" + txn.get("amount"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "Network: " + txn.get("network"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "Status: " + txn.get("status"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addLine(template, "Date: " + txn.get("date"), TextUnit.TextSize.NORMAL, Align.LEFT);
+            addDivider(template);
+            addBlank(template);
+
+            String status = txn.get("status");
+            String amountStr = txn.get("amount");
+            if ("successful".equalsIgnoreCase(status)) {
+                try {
+                    totalAmount += Double.parseDouble(amountStr);
+                    successCount++;
+                } catch (NumberFormatException e) {
+                    // matches existing Trendit behavior: skip unparsable amounts
+                }
+            } else if ("failed".equalsIgnoreCase(status)) {
+                failedCount++;
+            }
+        }
+
+        addLine(template, "--- Summary Totals ---", TextUnit.TextSize.NORMAL, Align.LEFT);
+        addBlank(template);
+        addLine(template, "Total Transactions: " + totalCount, TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Successful Transactions: " + successCount, TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, "Failed Transactions: " + failedCount, TextUnit.TextSize.NORMAL, Align.LEFT);
+        addLine(template, String.format("Total Amount(Successful): ZMW %.2f", totalAmount), TextUnit.TextSize.NORMAL, Align.LEFT);
+        addBlank(template);
+        addLine(template, "Thank you!", TextUnit.TextSize.NORMAL, Align.CENTER);
+        addBlank(template);
+
+        finishPrint(printer, template, result, "Summary printed", "Could not print summary");
+    }
+
+    private static PrintTemplate beginTemplate(Context context) {
+        PrintTemplate template = PrintTemplate.getInstance();
+        template.init(context, null);
+        template.clear();
+        return template;
+    }
+
+    private static void addLine(PrintTemplate template, String text, int size, Align align) {
+        template.add(new TextUnit(text == null ? "" : text, size, align).setBold(false));
+    }
+
+    private static void addBlank(PrintTemplate template) {
+        template.add(new TextUnit("\n"));
+    }
+
+    private static void addDivider(PrintTemplate template) {
+        template.add(new TextUnit("------------------------------------------------", TextUnit.TextSize.SMALL, Align.CENTER)
+                .setBold(false));
+    }
+
+    private static void addLogo(Context context, PrintTemplate template) {
+        Bitmap originalBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo);
+        if (originalBitmap == null) {
+            return;
+        }
+        int printerWidth = 100;
+        int scaledHeight = (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth()));
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth, scaledHeight, false);
+        template.add(new ImageUnit(Align.CENTER, resizedBitmap, printerWidth, scaledHeight));
+    }
+
+    private static void finishPrint(AidlPrinter printer, PrintTemplate template, MethodChannel.Result result,
+            String successMessage, String failureMessage) {
+        try {
+            Bitmap receiptBitmap = template.getPrintBitmap();
+            printer.setPrinterGray(3);
+            printer.addRuiImage(receiptBitmap, 0);
+            printer.printRuiQueue(new AidlPrinterListener.Stub() {
+                @Override
+                public void onPrintFinish() throws RemoteException {
+                    MAIN_HANDLER.post(() -> result.success(successMessage));
+                }
+
+                @Override
+                public void onError(int errorCode) throws RemoteException {
+                    MAIN_HANDLER.post(() -> result.error("PRINT_FAILED", failureMessage + " (code " + errorCode + ")", null));
+                }
+            });
+        } catch (RemoteException e) {
+            Log.e(TAG, "Topwise print failed", e);
+            MAIN_HANDLER.post(() -> result.error("PRINT_FAILED", failureMessage, null));
+        }
+    }
+}
+```
+
+---
+
+## 5. Method channel wiring (glues Trendit + Topwise together on the Dart side)
+
+Both built-in backends are invoked from Dart through a single channel,
+`PrintHelper`, talking to a single native `MethodChannel` named
+`com.example.pos_mobile/print`, handled in `MainActivity.java`. Copy
+`printerhepler.dart` if you want built-in printing callable from Dart at all
+(the Bluetooth path doesn't need it).
+
+Channel methods: `printReceipt`, `printZesco`, `printDailySummary` — each maps
+1:1 to a method in `MainActivity.java` that tries Topwise first, then falls
+back to the inline Trendit code.
+
+### 5a. `lib/utils/helpers/printerhepler.dart`
+
+```dart
+import 'package:flutter/services.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:pos_mobile/common/widgets/loaders/loaders.dart';
+
+class PrintHelper {
+  static final deviceStorage = GetStorage();
+
+  static const platform = MethodChannel('com.example.pos_mobile/print');
+
+  static Future<void> printReceipt({
+    required String phone,
+    required String amount,
+    required String paymentChannel,
+    required String transactionId,
+    required String transactionType,
+    required String date,
+    required String status,
+    required String imagePath,
+    required String businessName,
+    required bool isReprint,
+  }) async {
+    final username = deviceStorage.read("userName");
+    final branchName = deviceStorage.read("branchName");
+
+    final receiptLog = GetStorage("receipt_logs");
+
+    final Map<String, String> arguments = {
+      'phone': phone,
+      'amount': amount,
+      'paymentChannel': paymentChannel,
+      'transactionId': transactionId,
+      'transactionType': transactionType,
+      'date': date,
+      'status': status,
+      'imagePath': imagePath,
+      'businessName': businessName,
+      "username": username,
+      "branchName": branchName,
+      "isReprint": isReprint.toString(),
+      "reprintCount": receiptLog.read(transactionId).toString(),
+    };
+
+    try {
+      await platform.invokeMethod('printReceipt', arguments);
+      APPLoaders.successSnackBar(
+          title: "Success!", message: "Receipt printed successfully");
+    } catch (e) {
+      APPLoaders.errorSnackBar(
+          title: "Error", message: "Failed to print receipt");
+    }
+  }
+
+  static void printZescoUnits({
+    required String token,
+    required String meterNumber,
+    required String numberOfUnits,
+    required String amountPaid,
+    required String vat,
+    required String businessName,
+    required String imageData,
+    required String address,
+    required String kwhAmount,
+    required String customerName,
+    required String voucherSerial,
+    required String date,
+  }) {
+    final username = deviceStorage.read("userName");
+    final branchName = deviceStorage.read("branchName");
+
+    try {
+      platform.invokeMethod('printZesco', {
+        'token': token,
+        'meterNumber': meterNumber,
+        'numberOfUnits': numberOfUnits,
+        'amountPaid': amountPaid,
+        'vat': vat,
+        'businessName': businessName,
+        "username": username,
+        "branchName": branchName,
+        'imageData': imageData,
+        'customerName': customerName,
+        "address": address,
+        "serialNumber": voucherSerial,
+        "kwhAmount": kwhAmount,
+        "date": date
+      });
+    } catch (e) {
+      APPLoaders.errorSnackBar(
+          message: 'Failed to print Zesco receipt: $e', title: "Error");
+    }
+  }
+}
+```
+
+### 5b. `MainActivity.java` — imports, fields, and channel setup
+
+Add these imports:
+
+```java
+import io.flutter.plugin.common.MethodChannel;
+import com.example.pos_mobile.PrinterHelper;
+import com.topwise.cloudpos.aidl.printer.AidlPrinter;
+import com.trendit.basesdk.POSDeviceManager;
+import com.trendit.basesdk.device.printer.OnPrintTaskListener;
+import com.trendit.basesdk.device.printer.PrinterConstants;
+import com.trendit.basesdk.device.printer.PrinterDevice;
+import com.trendit.basesdk.device.printer.format.PrintAlign;
+import com.trendit.basesdk.device.printer.format.PrintFontSize;
+import com.trendit.basesdk.device.printer.format.TextFormat;
+import com.trendit.basesdk.device.printer.format.BitmapFormat;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import java.util.List;
+import java.util.Map;
+```
+
+Add these fields/constants to the `MainActivity` class:
+
+```java
+private static final String PRINT_CHANNEL = "com.example.pos_mobile/print";
+
+private PrinterDevice printerDevice;
+private PrinterHelper printerHelper = new PrinterHelper(this); // Pass Activity context
+```
+
+In `configureFlutterEngine`, initialize the Trendit printer device (part of
+the existing device-manager init) and register the channel:
+
+```java
+POSDeviceManager deviceManager = POSDeviceManager.getInstance();
+printerDevice = deviceManager.getPrinterDevice();
+
+setupPrintChannel(flutterEngine);
+```
+
+The channel handler:
+
+```java
+private void setupPrintChannel(FlutterEngine flutterEngine) {
+    new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), PRINT_CHANNEL).setMethodCallHandler(
+            (call, result) -> {
+                if (call.method.equals("printReceipt")) {
+                    Map<String, String> arguments = call.arguments();
+                    printReceipt(arguments, result);
+                } else if (call.method.equals("printZesco")) {
+                    Map<String, String> arguments = call.arguments();
+                    printZescoReceipt(arguments, result);
+                } else if (call.method.equals("printDailySummary")) {
+                    List<Map<String, String>> transactions = call.arguments();
+                    printDailySummary(transactions, result);
+                } else {
+                    result.notImplemented();
+                }
+            });
+}
+```
+
+The three print methods — each tries Topwise first, then falls back to the
+inline Trendit `printerDevice` calls:
+
+```java
+private void printReceipt(Map<String, String> receiptDetails, MethodChannel.Result result) {
+    AidlPrinter topwisePrinter = TopwisePrinterHelper.getPrinterIfAvailable();
+    if (topwisePrinter != null) {
+        TopwisePrinterHelper.printReceipt(this, topwisePrinter, receiptDetails, result);
+        return;
+    }
+    if (printerDevice != null) {
+        printerDevice.clear();
+        String isReprintFlag = receiptDetails.get("isReprint");
+        boolean isReprint = isReprintFlag != null && isReprintFlag.equals("true");
+
+        String reprintCountStr = receiptDetails.get("reprintCount");
+        int reprintCount = 1;
+        try {
+            reprintCount = Integer.parseInt(reprintCountStr);
+        } catch (Exception ignored) {
+        }
+        String businessName = (String) receiptDetails.get("businessName");
+        String cashierName = (String) receiptDetails.get("username");
+
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_EXTRA_LARGE),
+                businessName + "\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                receiptDetails.get("branchName") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Cashier: " + cashierName + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Amount: " + receiptDetails.get("amount") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Phone: " + receiptDetails.get("phone") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Payment Channel: " + receiptDetails.get("paymentChannel") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Transaction ID: " + receiptDetails.get("transactionId") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Date: " + receiptDetails.get("date") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Status: " + receiptDetails.get("status") + "\n\n");
+
+        printerDevice.printText(null, "\n\n");
+        if (isReprint) {
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "*** REPRINT COPY ***\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_SMALL),
+                    "Printed " + reprintCount + " time(s)\n\n");
+        }
+
+        printerDevice.printDottedLines(null, 1);
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Thank you for your purchase!\n\n\n");
+
+        Bitmap originalBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
+        int printerWidth = 100;
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth,
+                (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth())), false);
+
+        if (resizedBitmap != null) {
+            BitmapFormat bitmapFormat = new BitmapFormat();
+            bitmapFormat.setAlign(PrintAlign.FORMAT_ALIGN_CENTER);
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Powered by ");
+            printerDevice.printBitmap(bitmapFormat, resizedBitmap);
+        }
+
+        printerDevice.printText(null, "\n\n");
+        printerDevice.printText(null, "\n\n\n\n\n");
+        printerDevice.startPrint(new OnPrintTaskListener() {
+            @Override
+            public void onPrintResult(int i) {
+                runOnUiThread(() -> {
+                    if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
+                        result.success("Receipt printed successfully");
+                    } else {
+                        result.error("PRINT_FAILED", "Failed to print receipt", null);
+                    }
+                });
+            }
+        });
+    } else {
+        result.error("UNAVAILABLE", "Printer not available", null);
+    }
+}
+
+private void printZescoReceipt(Map<String, String> receiptDetails, MethodChannel.Result result) {
+    AidlPrinter topwisePrinter = TopwisePrinterHelper.getPrinterIfAvailable();
+    if (topwisePrinter != null) {
+        TopwisePrinterHelper.printZescoReceipt(this, topwisePrinter, receiptDetails, result);
+        return;
+    }
+    if (printerDevice != null) {
+        printerDevice.clear();
+
+        String businessName = receiptDetails.get("businessName");
+        String token = receiptDetails.get("token");
+        String meterNumber = receiptDetails.get("meterNumber");
+        String numberOfUnits = receiptDetails.get("numberOfUnits");
+        String amountPaid = receiptDetails.get("amountPaid");
+        String vat = receiptDetails.get("vat");
+        String transactionDate = receiptDetails.get("date");
+        String cashierName = (String) receiptDetails.get("username");
+        String customerName = receiptDetails.get("customerName");
+        String address = receiptDetails.get("address");
+        String serialNumber = receiptDetails.get("serialNumber");
+        String kwhAmount = receiptDetails.get("kwhAmount");
+
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_EXTRA_LARGE),
+                businessName + "\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                receiptDetails.get("branchName") + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Cashier: " + cashierName + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Customer Name: " + customerName + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Address: " + address + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Token: " + token + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Meter Number: " + meterNumber + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Number of Units: " + numberOfUnits + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Kwh Amount: " + kwhAmount + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Amount Paid: " + amountPaid + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "VAT: " + vat + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Voucher Serial: " + serialNumber + "\n\n");
+        printerDevice.printText(getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Transaction Date: " + transactionDate + "\n\n");
+
+        printerDevice.printDottedLines(null, 1);
+        printerDevice.printText(null, "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Thank you for your purchase!\n\n\n");
+
+        Bitmap originalBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
+        int printerWidth = 100;
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, printerWidth,
+                (int) (originalBitmap.getHeight() * ((float) printerWidth / originalBitmap.getWidth())), false);
+
+        if (resizedBitmap != null) {
+            BitmapFormat bitmapFormat = new BitmapFormat();
+            bitmapFormat.setAlign(PrintAlign.FORMAT_ALIGN_CENTER);
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Powered by ");
+            printerDevice.printBitmap(bitmapFormat, resizedBitmap);
+        }
+
+        printerDevice.printText(null, "\n\n");
+        printerDevice.printText(null, "\n\n\n\n\n");
+
+        printerDevice.startPrint(new OnPrintTaskListener() {
+            @Override
+            public void onPrintResult(int i) {
+                runOnUiThread(() -> {
+                    if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
+                        result.success("Zesco receipt printed successfully");
+                    } else {
+                        result.error("PRINT_FAILED", "Failed to print Zesco receipt", null);
+                    }
+                });
+            }
+        });
+    } else {
+        result.error("UNAVAILABLE", "Printer not available", null);
+    }
+}
+
+private void printDailySummary(List<Map<String, String>> transactions, MethodChannel.Result result) {
+    AidlPrinter topwisePrinter = TopwisePrinterHelper.getPrinterIfAvailable();
+    if (topwisePrinter != null) {
+        TopwisePrinterHelper.printDailySummary(this, topwisePrinter, transactions, result);
+        return;
+    }
+    if (printerDevice != null) {
+        printerDevice.clear();
+
+        int successCount = 0;
+        double totalAmount = 0.0;
+        int failedCount = 0;
+        int totalCount = 0;
+        int pendingCount = 0;
+
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_LARGE),
+                "Daily Transaction Summary\n\n");
+
+        for (Map<String, String> txn : transactions) {
+            totalCount++;
+
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Business: " + txn.get("businessName") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Cashier: " + txn.get("cashier") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "ID: " + txn.get("transactionId") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Amount: " + "K" + txn.get("amount") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Network: " + txn.get("network") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Status: " + txn.get("status") + "\n\n");
+            printerDevice.printText(
+                    getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                    "Date: " + txn.get("date") + "\n\n");
+
+            printerDevice.printDottedLines(null, 1);
+            printerDevice.printText(null, "\n\n");
+
+            String status = txn.get("status");
+            String amountStr = txn.get("amount");
+
+            if ("successful".equalsIgnoreCase(status)) {
+                try {
+                    double amt = Double.parseDouble(amountStr);
+                    totalAmount += amt;
+                    successCount++;
+                } catch (NumberFormatException e) {
+                    // log or skip
+                }
+            } else if ("failed".equalsIgnoreCase(status)) {
+                failedCount++;
+            } else {
+                pendingCount++;
+            }
+        }
+
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "\n--- Summary Totals ---\n" + "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Total Transactions: " + totalCount + "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Successful Transactions: " + successCount + "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Failed Transactions: " + failedCount + "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_LEFT, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                String.format("Total Amount(Successful): ZMW %.2f\n", totalAmount));
+        printerDevice.printText(null, "\n\n");
+        printerDevice.printText(
+                getTextFormat(PrintAlign.FORMAT_ALIGN_CENTER, PrintFontSize.FORMAT_FONT_SIZE_MEDIUM),
+                "Thank you!\n\n\n");
+        printerDevice.printText(null, "\n\n");
+        printerDevice.startPrint(new OnPrintTaskListener() {
+            @Override
+            public void onPrintResult(int i) {
+                runOnUiThread(() -> {
+                    if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
+                        result.success("Summary printed");
+                    } else {
+                        result.error("PRINT_FAILED", "Could not print summary", null);
+                    }
+                });
+            }
+        });
+    } else {
+        result.error("UNAVAILABLE", "Printer not available", null);
+    }
+}
+
+private TextFormat getTextFormat(PrintAlign align, int fontSize) {
+    TextFormat format = new TextFormat();
+    format.setAlign(align);
+    format.setFontSize(fontSize);
+    return format;
+}
+```
+
+> These three methods and `getTextFormat` already exist standalone in
+> `PrinterHelper.java` (section 3d) — `MainActivity.java`'s copies predate
+> that extraction and were kept as-is precisely so the Trendit path stayed
+> "untouched" while Topwise support was bolted on. When porting to a new
+> project, either keep both copies (matching this app's history) or
+> consolidate onto `PrinterHelper.java` and call it from `MainActivity`
+> instead — behaviorally identical either way.
+
+---
+
+## 6. What to copy — checklist
+
+**Already copied (per your note):**
+- [x] `lib/utils/helpers/bluetooth_printer_helper.dart`
+- [x] `lib/utils/helpers/printer_dispatch.dart`
+- [x] `lib/utils/helpers/printer_preference.dart`
+
+**Still needed, depending on which backends the new project supports** (code
+for every unchecked item is embedded above, in the section noted):
+
+For Bluetooth printing to compile and run:
+- [ ] `pubspec.yaml` deps: `print_bluetooth_thermal`, `esc_pos_utils_plus`, `image`, `permission_handler`, `get_storage` (§2)
+- [ ] Bluetooth permissions in `AndroidManifest.xml` (§2)
+- [ ] `APPLoaders` (or your own snackbar/toast helper) — used by `bluetooth_printer_helper.dart` (§3a)
+- [ ] A logo asset + its constant (`APPImages.lightAppLogo` equivalent) (§3b)
+- [ ] (Recommended) `printer_settings_screen.dart` as a reference for the settings UI (§3c)
+
+For Trendit built-in printing:
+- [ ] `PrinterHelper.java` (§3d)
+- [ ] Trendit `printReceipt`/`printZescoReceipt`/`printDailySummary` code + `printerDevice` init from `MainActivity.java` (§5b)
+- [ ] Trendit SDK jar(s) in `android/app/libs/` + matching `build.gradle` `implementation files(...)` lines (§3, end)
+
+For Topwise built-in printing:
+- [ ] `TopwisePrinterHelper.java` (§4a)
+- [ ] Topwise availability check + import in `MainActivity.java` (§5b)
+- [ ] `libs/topwise/T1_V2_20260326.jar` (or the correct version for the target device) + matching `build.gradle` line — **exclude** `core-3.2.1.jar` (§4)
+- [ ] `R.drawable.logo` resource
+
+Glue (only if built-in printing is wanted from Dart):
+- [ ] `lib/utils/helpers/printerhepler.dart` (§5a)
+- [ ] The `PRINT_CHANNEL` (`com.example.pos_mobile/print`) `MethodChannel` setup in `MainActivity.java`, with its three method cases (§5b)
+
+> Note: if the new project's Android package/applicationId differs from
+> `com.example.pos_mobile`, update the channel name string
+> (`"com.example.pos_mobile/print"`) consistently on both the Dart and Java
+> sides, and place the Java files under the matching package folder.

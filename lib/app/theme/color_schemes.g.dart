@@ -2,41 +2,33 @@ import 'package:flutter/material.dart';
 
 const lightColorScheme = ColorScheme(
   brightness: Brightness.light,
-  primary: Color(0xFF313180),
-  //Primary for buttons and stuff
+  primary: Color(0xFF383D92), // gp-cobalt
   onPrimary: Color(0xFFFFFFFF),
-  primaryContainer: Color(0xFFf5f5f5),
-  onPrimaryContainer: Color(0xFF1E1E2D),
-  secondary: Color(0xFF00A7D1),
+  primaryContainer: Color(0xFFECECF8), // info tile / icon chip fill
+  onPrimaryContainer: Color(0xFF383D92),
+  secondary: Color(0xFF00AFEB), // gp-sky
   onSecondary: Color(0xFFFFFFFF),
-  secondaryContainer: Color(0xFFDAE2F9),
-  onSecondaryContainer: Color(0xFF131C2C),
-  // tertiary: Color(0xFF705574),
+  secondaryContainer: Color(0xFFECECF8),
+  onSecondaryContainer: Color(0xFF383D92),
   onTertiary: Color(0xFFFFFFFF),
   tertiaryContainer: Color(0xFFFAD7FC),
   onTertiaryContainer: Color(0xFF29132E),
-  error: Color(0xFFBA1A1A),
-  errorContainer: Color(0xFFFFDAD6),
+  error: Color(0xFFE11D2E),
+  errorContainer: Color(0xFFFDE8E8),
   onError: Color(0xFFFFFFFF),
-  onErrorContainer: Color(0xFF410002),
-  // background: Color(0xFFF4F6FA),
-  // onBackground: Color(0xFF1A1B1F),
-  surface: Color(0xFFFFFFFF),
-  //Background Color
-  // surface: Color(0xFFF6F9F5),
-  onSurface: Color(0xFF1A1B1F),
-  // surfaceVariant: Color(0xFFE0E2EC),
-  onSurfaceVariant: Color(0xFF44474E),
-  outline: Color(0xFF74777F),
-
+  onErrorContainer: Color(0xFF991B1B),
+  surface: Color(0xFFFFFFFF), // card/sheet surface
+  onSurface: Color(0xFF141A34), // neutral text — primary
+  onSurfaceVariant: Color(0xFF70788F), // neutral text — tertiary
+  outline: Color(0xFFDDE0EB), // border — medium
   onInverseSurface: Color(0xFFF2F0F4),
   inverseSurface: Color(0xFF2F3033),
   inversePrimary: Color(0xFFACC7FF),
-  shadow: Color(0xFF000000),
-  surfaceTint: Color.fromARGB(255, 255, 255, 255),
-  outlineVariant: Color(0xFFf8f8f8),
+  shadow: Color(0xFF080C30),
+  surfaceTint: Color(0xFFFFFFFF),
+  outlineVariant: Color(0xFFEEF0F5), // border — light
   scrim: Color(0xFF000000),
-  surfaceContainer: Color(0xFFf8f8f8), //Secondary Background Color
+  surfaceContainer: Color(0xFFF3F4F6), // divider
   // secondaryFixed: Color(0xFFFFFFFF),
 );
 

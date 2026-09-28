@@ -5,74 +5,67 @@ Grounded in source code (file:line cited); no endpoint here is assumed or guesse
 
 ---
 
-## 1. Setup Screen → Device Registration
+## 0. Login — how the POS app gets the session token
 
-**Service:** `gp_pos_tms`
-**Route:** `POST /v1/pos/register`
-**Auth:** none (public, device-facing)
-**Gateway:** `gp_gateway` proxies `/api/v1/*` → `gp_pos_tms` `/v1/*`
-**Source:** `gp_pos_tms/internal/controllers/pos_devices/pos_devices_controller.go:19-61`, DTO `gp_pos_tms/internal/models/dto.go:14-37`
+Every "session-token route" in this doc (§2a, §2b, §2c) needs a token from this endpoint first. **There is no dedicated POS/agent login endpoint** (`api/pos/login` does not exist anywhere in the backend) — the POS app must authenticate through `gp_auth-main`'s generic user login, the same one merchants and other staff use.
 
-### Request body
+**Service:** `gp_auth-main`
+**Route:** `POST /auth/login`
+**Auth:** none (public)
+**Gateway:** `POST /api/auth/login` (listed in `isPublicGatewayRoute`, so the gateway does not require a session for this call — obviously, since it's what issues one)
+**Source:** route `gp_auth-main/cmd/routes.go:52`, handler `gp_auth-main/internal/modules/users/auth_handler.go:71-172`
 
+A cashier is a normal `gp_auth-main` user with `account_type = agent` (seeded example: `gp_auth-main/cmd/seed_merchants.go:74-76`) — there's no separate cashier identity system, just a user row scoped to a merchant.
+
+### ⚠️ This is a two-step, OTP-gated login by default
+
+Unless the email is in the `SKIP_OTP_EMAILS` env allowlist (`auth_service.go:579-581`), a plain email+password call does **not** return a token — it triggers an emailed one-time code, and the client must call the same endpoint again with that code. A mobile POS app has to implement this two-step flow (or the merchant's cashier emails must be added to `SKIP_OTP_EMAILS` to skip it, which is an environment/ops decision, not a code one).
+
+**Step 1 — Request body**
+```json
+{ "email": "cashier@merchant.com", "password": "string" }
+```
+
+**Step 1 — Response, 200 OK (OTP sent, no token yet)**
+```json
+{ "mfa_required": true, "message": "verification code sent to your email" }
+```
+
+**Step 2 — Request body (resubmit with the code from the email)**
+```json
+{ "email": "cashier@merchant.com", "password": "string", "otp": "123456" }
+```
+
+**Step 2 — Response, 200 OK (`AuthenticatedUser`, source: `gp_auth-main/internal/common/structs.go:19-34`)**
 ```json
 {
-  "serial_number": "string, required",
-  "name": "string, required",
-  "finger_print": "string, required",
-  "description": "string, optional",
-  "device_model": "string, optional",
-  "operating_system": "string, optional",
-  "phone_number_1": "string, optional",
-  "phone_number_2": "string, optional",
-  "device_identification_number": "string, optional",
-  "terminal_type_id": "string (uuid), optional",
-  "merchant_id": "string (uuid), optional",
-  "merchant_email": "string, optional",
-  "merchant_name": "string, optional",
-  "current_app_version": "string, optional",
-  "latitude": "string, optional",
-  "longitude": "string, optional"
+  "user": { "...user record..." },
+  "token": "eyJhbGciOi....<JWT access token>",
+  "refresh_token": "eyJhbGciOi....<JWT refresh token>",
+  "session_id": "string",
+  "access_expiration": 1735142400,
+  "refresh_expiration": 1737734400,
+  "account_type": "agent",
+  "merchant_id": "3e2f6b9a-....-uuid",
+  "is_sandbox_enabled": false,
+  "user_id": "string",
+  "roles": {},
+  "permissions": ["..."]
 }
 ```
+`token` is the session JWT — send it as `Authorization: Bearer <token>` on every §2/§3 request in this doc. `merchant_id` in this response is exactly what `resolveSessionMerchantID` later reads back out of the token's claims server-side for collect/check-status/name-lookup (§2b/§2c/§2a) — it is not something the app needs to send itself.
 
-> Note: only `serial_number`, `name`, and `finger_print` are enforced (`binding:"required"`). `device_model`, `terminal_type_id`, and `merchant_id` are accepted but never validated against the terminal-types catalog or an existing merchant — a client can submit blank/fake values for these and the record is still created.
-
-### Responses
-
-**201 Created — new device registered**
+**400/401** — invalid credentials, bad/expired OTP
 ```json
-{
-  "success": true,
-  "message": "created",
-  "data": { "device_id": "3e2f6b9a-....-uuid" }
-}
+{ "error": "<reason>" }
 ```
-(`utils.RespondWithCreated`, `pos_devices_controller.go:59`)
+(exact shape from `writeLoginError`/`writeOTPDeliveryError`, not fully traced in this pass)
 
-**409 Conflict — serial number already registered (upsert path)**
-```json
-{
-  "success": false,
-  "message": "device already registered",
-  "data": { "device_id": "3e2f6b9a-....-uuid" }
-}
-```
-(`pos_devices_controller.go:50-57`)
-
-**400 Bad Request — missing required field**
-```json
-{ "success": false, "message": "<validation error text>" }
-```
-
-**500 Internal Server Error** — DB/registration failure
-```json
-{ "success": false, "message": "<error text>" }
-```
+**Companion:** `POST /auth/reset-password` (gateway: `/api/auth/reset-password`, also public) for the Reset Password screen — not detailed here since it wasn't part of this doc's original scope.
 
 ---
 
-## 2. Update Screen → OTA Check-Update
+## 1. Update Screen → OTA Check-Update
 
 **Service:** `gp_pos_tms`
 **Route:** `POST /v1/apps/check-update`
@@ -114,16 +107,17 @@ Grounded in source code (file:line cited); no endpoint here is assumed or guesse
 
 ---
 
-## 3. Collections Flow (Lookup → Confirm → Poll)
+## 2. Collections Flow (Lookup → Confirm → Poll)
 
-**Service:** `gp-payment-orchestration`
-**Auth:** ⚠️ **Merchant API key/secret bearer token** (obtained via `POST /oauth/token` with `client_id`/`client_secret`) — **not** a `gp_auth` user/session JWT. A cashier's app-login token from `/auth/login` cannot call these directly; the app needs a separately provisioned merchant API credential.
-**Gateway:** proxied at `/api/v2/mobile-money/...` and `/api/v2/name-lookup/...`, rewritten internally to the service's own `/api/v1/...` (`gp_gateway/internal/api/server.go:866-896`)
+Two auth modes now exist side by side. Use the **session-token** routes for the POS mobile app — they were added specifically so a cashier's normal login token is enough, with no merchant API key/secret embedded in the app.
 
-### 3a. Lookup — Name Lookup
+### 2a. Lookup — Name Lookup ✅ session-token route
 
-**Route:** `GET /api/v1/name-lookup/:phone` (live) — gateway: `GET /api/v2/name-lookup/:phone`
-**Source:** `gp-payment-orchestration/internal/modules/merchantapis/lookup.go:41-148`, route `merchant_api_routes.go:137`
+**Route:** `GET /api/name-lookup/:phone`
+**Auth:** session JWT (the cashier's normal login token) — gateway rewrites to `GET /api/v1/dashboard/name-lookup/:phone`
+**Source:** handler `gp-payment-orchestration/internal/api/handlers/merchant_api_handlers/dashboard_handlers.go` (`HandleDashboardNameLookupHandler`), route `merchant_api_routes.go` (`/api/v1/dashboard` group), gateway wiring `gp_gateway/internal/api/server.go:776-786`
+
+Same pattern as collect/check-status: `merchant_id` is resolved from the session claims (never from a client-supplied field), then the merchant's live API `client_id` is resolved server-side before the lookup runs. This route pre-dates the collections work — it was originally built for the admin dashboard's "look up a name before a manual disbursement" flow, but is equally usable by the POS app since it's already session-gated end to end.
 
 Validates phone number is ≥12 digits and belongs to a supported provider before dispatching an RPC to `gp-mno-service`.
 
@@ -144,9 +138,14 @@ Validates phone number is ≥12 digits and belongs to a supported provider befor
 }
 ```
 
-**400 Bad Request** — invalid phone format / unsupported provider / merchant not found
+**400 Bad Request** — invalid phone format / unsupported provider / merchant not found / no live API key on the merchant
 ```json
 { "code": 400, "status": "error", "message": "Invalid phone number format. Phone number must be at least 12 digits long (e.g., 260XXXXXXXXX)." }
+```
+
+**401 Unauthorized** — session does not identify a merchant
+```json
+{ "message": "session does not identify a merchant" }
 ```
 
 **500** — MNO service unreachable or response unparseable
@@ -154,28 +153,32 @@ Validates phone number is ≥12 digits and belongs to a supported provider befor
 { "code": 500, "status": "error", "message": "Failed to contact MNO service: <detail>" }
 ```
 
-### 3b. Confirm / Submit — Mobile Money Collection
+> A merchant-API-key variant of this same operation also exists at `GET /api/v1/name-lookup/:phone` (`gp-payment-orchestration/internal/modules/merchantapis/lookup.go:41-148`), used by non-POS integrators. The POS app should use the session route above, not this one.
 
-**Route:** `POST /api/v1/mobile-money/collect` (live) — gateway: `POST /api/v2/mobile-money/collect`
-**Source:** `gp-payment-orchestration/internal/modules/merchantapis/collection.go:38-290`, route `merchant_api_routes.go:98`
+### 2b. Confirm / Submit — Mobile Money Collection ✅ session-token route
 
-### Request body
+**Route:** `POST /api/mobile-money/collect`
+**Auth:** session JWT (the cashier's normal login token) — gateway rewrites to `POST /api/v1/dashboard/mobile-money/collect`
+**Source:** handler `gp-payment-orchestration/internal/api/handlers/merchant_api_handlers/dashboard_handlers.go` (`HandleDashboardCollectionHandler`), route `merchant_api_routes.go` (`/api/v1/dashboard` group), gateway wiring `gp_gateway/internal/api/server.go` (added next to the existing name-lookup rewrite)
 
+Resolves the caller's `merchant_id` from their verified session claims (never from a client-supplied field), then resolves that merchant's live API `client_id` server-side and runs the same fee-calculation → transaction-create → MNO-dispatch logic as the merchant-API-key path.
+
+### Request
+
+**Header:** `X-Transaction-Ref: <string, required, unique>`
+
+**Body:**
 ```json
 {
-  "client_id": "string",
-  "merchant_id": "string",
   "phone_number": "260956587842",
   "amount": 100.00,
-  "transaction_ref": "string, required, must be unique",
-  "callback_url": "string, optional",
   "branch_id": "string, optional (POS attribution)",
   "pos_device_id": "string, optional (POS attribution)",
-  "user_id": "string, optional (POS attribution — cashier)"
+  "user_id": "string, optional (POS attribution — cashier)",
+  "simulate_result": "string, sandbox-only, optional"
 }
 ```
-
-Validation order: `transaction_ref` required → `phone_number` ≥12 digits → `amount` > 0 → `client_id` resolves to a merchant → fee calculation → transaction record created → provider resolved from phone prefix → dispatched to MNO async.
+`phone_number` must be exactly 12 digits.
 
 ### Responses
 
@@ -207,19 +210,25 @@ Validation order: `transaction_ref` required → `phone_number` ≥12 digits →
   "data": { "transaction_reference": "<transaction_ref>" }
 }
 ```
-(`collection.go:292-299` — this is not a failure; the transaction stays pending for later resolution.)
+This is not a failure — the transaction stays pending for later resolution.
 
-**400 Bad Request** — validation failure, invalid client_id, fee calculation rejection, unsupported provider, or transaction creation failure
+**400 Bad Request** — missing `X-Transaction-Ref`, invalid phone, amount ≤ 0, no live API key on the merchant, fee-calculation rejection, or unsupported provider
 ```json
-{ "code": 400, "status": "failed", "message": "<reason, e.g. 'Amount must be greater than 0'>" }
+{ "code": 400, "status": "failed", "message": "<reason>" }
 ```
 
-### 3c. Poll — Check Collection Status
+**401 Unauthorized** — session does not identify a merchant
+```json
+{ "code": 401, "message": "session does not identify a merchant" }
+```
 
-**Route:** `GET /api/v1/mobile-money/check-status/:transaction_ref` (live) — gateway: `GET /api/v2/mobile-money/check-status/:transaction_ref`
-**Source:** `gp-payment-orchestration/internal/modules/merchantapis/collection.go:301-330`, struct `auth.go:49-61`, route `merchant_api_routes.go:138`
+### 2c. Poll — Check Collection Status ✅ session-token route
 
-Request has no body; `transaction_ref` is a path param, `client_id` is taken from the authenticated caller context.
+**Route:** `GET /api/mobile-money/check-status/:transaction_ref`
+**Auth:** session JWT — gateway rewrites to `GET /api/v1/dashboard/mobile-money/check-status/:transaction_ref`
+**Source:** handler `dashboard_handlers.go` (`HandleDashboardCollectionCheckStatusHandler`)
+
+Request has no body; `transaction_ref` is a path param, `client_id` is resolved server-side from the session (same as §2b).
 
 **200 OK**
 ```json
@@ -232,20 +241,25 @@ Request has no body; `transaction_ref` is a path param, `client_id` is taken fro
 ```
 `status` reflects the underlying transaction's current state (e.g. `pending`, `successful`, `failed`) as returned by `gp_transactions_service`'s `transactions.check_status` RPC.
 
-**Error** — RPC failure returns a Go error to the caller (mapped to an error response by the handler layer, not shown in this file — not asserted here since the wrapping HTTP handler wasn't inspected in this pass).
+**400 Bad Request** / **422** — missing `transaction_ref`, or RPC failure
+```json
+{ "code": 400, "status": "failed", "message": "<error text>" }
+```
 
 > ⚠️ No real-time/WebSocket alternative exists. `gp_transactions_service` and `gp-payment-orchestration` both contain an unused Socket.IO instance (dead code, never wired to a route) — polling is the only working mechanism today.
 
+**Precondition carried over from disbursement:** the merchant must already have a live API key provisioned (`merchantapikeys.ResolveLiveClientID` — the session route resolves it server-side, but the key row itself still has to exist). If disbursement already works for a merchant today, collections now works the same way.
+
 ---
 
-## 4. Transaction History & Details
+## 3. Transaction History & Details
 
 **Service:** `gp_transactions_service`
 **Auth:** session JWT (merchant or admin claims) — `requireAny` at service level; gateway additionally applies `authorizeAdminFinancialFeature` permission check
 **Gateway:** `api.Any("/transactions/*path", ...)` (`gp_gateway/internal/api/server.go:1039-1054`)
 **Source:** `gp_transactions_service/internal/api/handlers/transactions.go`
 
-### 4a. List — Transaction History
+### 3a. List — Transaction History
 
 **Route:** `GET /transactions/list`
 **Source:** `transactions.go:36-68`, filters parsed at `transactions.go:292-316`
@@ -288,7 +302,7 @@ Request has no body; `transaction_ref` is a path param, `client_id` is taken fro
 { "success": false, "message": "<error text>" }
 ```
 
-### 4b. Details — Single Transaction
+### 3b. Details — Single Transaction
 
 **Route:** `GET /transactions/get/:id`
 **Source:** `transactions.go:318-330`
@@ -319,5 +333,5 @@ Request has no body; `transaction_ref` is a path param, `client_id` is taken fro
 ## Open gaps for this mobile app (not covered above — flagged for follow-up)
 
 - No dedicated POS-agent login endpoint (`api/pos/login`) exists anywhere; only `gp_auth-main`'s generic `/auth/login`.
-- The Collections endpoints require a merchant API key/secret, which is a different credential than a cashier's session login token — needs a decision on how the app authenticates to this flow.
+- ~~Collections requires a merchant API key/secret~~ — **resolved**: `POST /api/mobile-money/collect` and `GET /api/mobile-money/check-status/:transaction_ref` now accept the caller's login session token directly (see §3b/3c).
 - Packages/vouchers flow has no backend implementation anywhere in the codebase.

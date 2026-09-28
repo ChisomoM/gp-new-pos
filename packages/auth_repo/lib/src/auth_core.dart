@@ -40,7 +40,7 @@ class AuthCore {
     try {
       final response = await _net.post('registration', body);
       if (response.isSuccessful()) {
-        await _getAndAuthUser(response);
+        await _getAndAuthUser(response.data as JsonMap);
       }
       return OpStatus.fromResponse(response);
     } catch (e) {
@@ -50,14 +50,38 @@ class AuthCore {
     }
   }
 
-  /// User Login
+  /// User Login.
+  ///
+  /// `gp_auth-main`'s `/auth/login` is a two-step, OTP-gated login: an
+  /// email+password call with no `otp` in [body] returns
+  /// `{ "mfa_required": true, "message": "..." }` (no tokens yet) and the
+  /// caller must call this again with the `otp` field added once the
+  /// cashier enters the code emailed to them. Only that second call
+  /// returns the real `token`/`refresh_token`/`user` payload.
+  ///
+  /// This endpoint has no `{success, message, data}` envelope — success is
+  /// a raw `AuthenticatedUser` object, failure is `{"error": "..."}"`, and
+  /// the OTP step is `{"mfa_required": true}` — so it can't use
+  /// `OpStatus.fromResponse`/`NetResponse.isSuccessful()` like every other
+  /// route in this app; each shape is checked directly.
   Future<OpStatus> login(JsonMap body) async {
     try {
       final response = await _net.post('auth/login', body);
-      if (response.isSuccessful()) {
-        await _getAndAuthUser(response);
+      final data = response.data;
+      if (data is JsonMap && data['token'] != null) {
+        await _getAndAuthUser(data);
+        return OpStatus.success('Logged in', data: data);
       }
-      return OpStatus.fromResponse(response);
+      if (data is JsonMap && data['mfa_required'] == true) {
+        return OpStatus.success(
+          (data['message'] as String?) ?? 'A verification code was sent',
+          data: const {'mfaRequired': true},
+        );
+      }
+      final serverError = data is JsonMap ? data['error'] as String? : null;
+      return OpStatus.error(
+        serverError ?? response.message ?? 'Invalid email or password',
+      );
     } catch (e) {
       log('Error in login: $e');
       _controller.add(AuthStatus.unauthenticated);
@@ -97,10 +121,11 @@ class AuthCore {
     _controller.add(AuthStatus.unauthenticated);
   }
 
-  Future<void> _getAndAuthUser(NetResponse response) async {
-    final responseData = response.data as JsonMap;
-    final accessToken = responseData['accessToken'] as String?;
-    final refreshToken = responseData['refreshToken'] as String?;
+  Future<void> _getAndAuthUser(JsonMap responseData) async {
+    final accessToken =
+        (responseData['token'] ?? responseData['accessToken']) as String?;
+    final refreshToken = (responseData['refresh_token'] ??
+        responseData['refreshToken']) as String?;
     await _prefs.set(_keyLoggedIn, true);
     await _prefs.set(_keyToken, accessToken);
     await _prefs.set(AuthConstants.keyCurrentToken, refreshToken);

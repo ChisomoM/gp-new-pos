@@ -1,12 +1,27 @@
 part of 'splash_cubit.dart';
 
-class SplashState extends Equatable {
-  const SplashState({required this.isLoading});
+/// Where Splash should route to once it has resolved device/session state.
+enum SplashDestination {
+  /// Still resolving — show the loading UI.
+  none,
 
-  factory SplashState.loading() => const SplashState(isLoading: true);
-  factory SplashState.loaded() => const SplashState(isLoading: false);
-  final bool isLoading;
+  /// Device isn't registered yet.
+  setup,
+
+  /// Device registered but no active session.
+  login,
+
+  /// Device registered and session valid.
+  main,
+}
+
+class SplashState extends Equatable {
+  const SplashState({this.destination = SplashDestination.none});
+
+  final SplashDestination destination;
+
+  bool get isLoading => destination == SplashDestination.none;
 
   @override
-  List<Object?> get props => [isLoading];
+  List<Object?> get props => [destination];
 }

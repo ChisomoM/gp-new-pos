@@ -97,8 +97,12 @@ class NetSource {
     yield* _netState.stream;
   }
 
-  /// Send GET request to [route] with optional [data]
-  Future<NetResponse> get(String route, [JsonMap? data]) async {
+  /// Send GET request to [route] with optional [data] and query [params]
+  Future<NetResponse> get(
+    String route, [
+    JsonMap? data,
+    JsonMap? params,
+  ]) async {
     try {
       final hasConnection =
           await InternetConnectionChecker.instance.hasConnection;
@@ -106,7 +110,11 @@ class NetSource {
         log('No Internet Connection @ $route');
         return NetResponse(status: 2, message: noConnection);
       }
-      final response = await _client.get<JsonMap>(route, data: data);
+      final response = await _client.get<JsonMap>(
+        route,
+        data: data,
+        queryParameters: params,
+      );
       log('Response @ $route: ${response.data}');
       return NetResponse.fromJson(response.data!);
     } catch (e) {
@@ -115,8 +123,12 @@ class NetSource {
     }
   }
 
-  /// Send POST request to [route] with optional [body]
-  Future<NetResponse> post(String route, [JsonMap? body]) async {
+  /// Send POST request to [route] with optional [body] and extra [headers]
+  Future<NetResponse> post(
+    String route, [
+    JsonMap? body,
+    JsonMap? headers,
+  ]) async {
     log('token to post: $_token');
     try {
       final hasConnection =
@@ -125,7 +137,11 @@ class NetSource {
         log('No Internet Connection @ $route');
         return NetResponse(status: 2, message: noConnection);
       }
-      final response = await _client.post<dynamic>(route, data: body);
+      final response = await _client.post<dynamic>(
+        route,
+        data: body,
+        options: headers == null ? null : Options(headers: headers),
+      );
       log('Response @ $route: ${response.data}');
       return NetResponse.fromJson(response.data as JsonMap);
     } catch (e) {

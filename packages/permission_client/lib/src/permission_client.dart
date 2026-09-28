@@ -36,6 +36,16 @@ class PermissionClient {
   Future<PermissionStatus> locationAlwaysStatus() =>
       Permission.locationAlways.status;
 
+  /// Request access to connect to already-paired Bluetooth devices
+  /// (Android 12+ runtime permission; a no-op grant on older OS versions
+  /// where Bluetooth connect is a manifest-only permission).
+  Future<PermissionStatus> requestBluetoothConnect() =>
+      Permission.bluetoothConnect.request();
+
+  /// Returns a permission status for connecting to Bluetooth devices.
+  Future<PermissionStatus> bluetoothConnectStatus() =>
+      Permission.bluetoothConnect.status;
+
   /// Opens the app settings page.
   ///
   /// Returns true if the settings could be opened, otherwise false.

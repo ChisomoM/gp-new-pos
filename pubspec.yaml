@@ -15,6 +15,7 @@ dependencies:
     path: packages/auth_repo
   bloc: ^9.0.1
   cloud_firestore: ^5.0.0
+  esc_pos_utils_plus: ^2.0.4
   firebase_messaging: ^15.0.0
   flutter:
     sdk: flutter
@@ -24,8 +25,10 @@ dependencies:
     sdk: flutter
   flutter_rating_bar: ^4.0.1
   flutter_svg: ^2.2.3
-  uni_links: ^0.5.1
+  app_links: ^6.4.0
   google_fonts: ^6.2.1
+  iconsax_flutter: ^1.0.1
+  image: ^4.2.0
   intl: ^0.20.2
   local_data:
     git:
@@ -37,11 +40,14 @@ dependencies:
     path: packages/notifications_repo
   permission_client:
     path: packages/permission_client
+  print_bluetooth_thermal: ^1.2.2
   services_repo:
     path: packages/services_repo
   shimmer: ^3.0.0
   url_launcher: ^6.3.2
+  uuid: ^4.5.2
   webview_flutter: ^4.13.0
+  firebase_core: ^3.15.2
 
 dev_dependencies:
   bloc_test: ^10.0.0
@@ -56,5 +62,5 @@ flutter:
   assets:
     - assets/
     - assets/svg/
-    - assets/json/
     - assets/images/
+    - assets/logos/

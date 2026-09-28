@@ -21,6 +21,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -60,17 +61,17 @@ android {
         create("production") {
             dimension = "default"
             applicationIdSuffix = ""
-            manifestPlaceholders["appName"] = "Kiza Mechanic Find"
+            manifestPlaceholders["appName"] = "Geepay"
         }
         create("staging") {
             dimension = "default"
             applicationIdSuffix = ".stg"
-            manifestPlaceholders["appName"] = "[STG] Kiza Mechanic Find"
+            manifestPlaceholders["appName"] = "[STG] Geepay"
         }
         create("development") {
             dimension = "default"
             applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "[DEV] Kiza Mechanic Find"
+            manifestPlaceholders["appName"] = "[DEV] Geepay"
         }
     }
 
@@ -94,5 +95,23 @@ flutter {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.20")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Trendit built-in-printer SDK (com.trendit.basesdk.*) -- used only when
+    // running on Trendit POS hardware, see PrinterHelper.java / MainActivity.
+    // libs/gson-2.8.5.jar (bundled by the Trendit SDK distribution) is
+    // deliberately NOT added here -- it duplicates classes already pulled in
+    // transitively by other dependencies (a newer com.google.code.gson:gson),
+    // causing a "Duplicate class" build failure. The SDK only needs the
+    // standard com.google.gson.Gson API, which the newer jar already
+    // provides on the classpath.
+    implementation(files("libs/basesdk-sources.jar"))
+
+    // Topwise TOPUSDK printer SDK (com.topwise.cloudpos.*) -- used only when
+    // the app is running on Topwise POS hardware, see TopwisePrinterHelper.
+    // NOTE: a libs/topwise/core-3.2.1.jar (if the vendor distribution ships
+    // one) must be excluded -- it duplicates classes already in libs/zxing.jar
+    // and causes a "Duplicate class" build failure.
+    implementation(files("libs/topwise/T1_V2_20260326.jar"))
 }

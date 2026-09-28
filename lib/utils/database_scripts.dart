@@ -71,7 +71,7 @@ CREATE TABLE plans (
 CREATE INDEX idx_plans_providerId ON plans(providerId);
 CREATE INDEX idx_plans_productId ON plans(productId);
 CREATE INDEX idx_plans_availabilityStatus ON plans(availabilityStatus);
-'''
+''',
 ];
 
 final migrationScript = <String>[];

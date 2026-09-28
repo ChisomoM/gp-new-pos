@@ -29,26 +29,28 @@ class AnimatedPageState extends State<AnimatedPage>
     );
 
     // Create fade animation
-    _fadeAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
-      ),
-    );
+    _fadeAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeIn,
+          ),
+        );
 
     // Create slide animation
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.05),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOut,
+          ),
+        );
 
     // Start the animation
     _controller.forward();
@@ -103,25 +105,27 @@ class _FadeSlideListItemState extends State<FadeSlideListItem>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.65, curve: Curves.easeOut),
-      ),
-    );
+    _fadeAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0, 0.65, curve: Curves.easeOut),
+          ),
+        );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.65, curve: Curves.easeOut),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.5),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0, 0.65, curve: Curves.easeOut),
+          ),
+        );
 
     Future.delayed(widget.delay * widget.index, () {
       if (mounted) {
@@ -190,15 +194,16 @@ class _FadeSlideAnimationState extends State<FadeSlideAnimation>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOut,
+          ),
+        );
 
     // Set initial offset based on direction
     Offset beginOffset;
@@ -213,15 +218,16 @@ class _FadeSlideAnimationState extends State<FadeSlideAnimation>
         beginOffset = Offset(0, widget.slideOffset / 100);
     }
 
-    _slideAnimation = Tween<Offset>(
-      begin: beginOffset,
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: beginOffset,
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOut,
+          ),
+        );
 
     // Start animation after delay
     Future.delayed(widget.delay, () {
@@ -280,15 +286,16 @@ class _FadeAnimationState extends State<FadeAnimation>
       vsync: this,
     );
 
-    _animation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: widget.curve,
-      ),
-    );
+    _animation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: widget.curve,
+          ),
+        );
 
     Future.delayed(widget.delay, () {
       if (mounted) {
