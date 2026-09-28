@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/app_colors.dart';
 import 'package:geepay_pos/app/theme/app_text_styles.dart';
+import 'package:geepay_pos/auth/auth_bloc.dart';
 import 'package:geepay_pos/collections/cubit/cubit.dart';
+import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
+import 'package:geepay_pos/utils/print_helper.dart';
+import 'package:geepay_pos/utils/printer_dispatch.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -9,6 +13,38 @@ import 'package:intl/intl.dart';
 
 class CollectionResultBody extends StatelessWidget {
   const CollectionResultBody({super.key});
+
+  Future<void> _printReceipt(
+    BuildContext context,
+    CollectionsState state,
+  ) async {
+    final tx = state.resultTransaction;
+    final isSuccess = state.isSuccessful ?? false;
+    final cashierName = context.read<AuthBloc>().state.user.name ?? '';
+    final amount = (tx?.amount ?? state.amount?.toDouble() ?? 0)
+        .toStringAsFixed(2);
+    final date = (tx?.processedAt ?? DateTime.now()).toIso8601String();
+    final receiptDetails = <String, dynamic>{
+      'businessName': 'Geepay',
+      'branchName': '',
+      'username': cashierName.isEmpty ? 'Cashier' : cashierName,
+      'amount': amount,
+      'phone': tx?.phoneNumber ?? state.phoneNumber,
+      'paymentChannel': tx?.channelLabel ?? 'Mobile Money',
+      'transactionId': tx?.lookupId ?? state.transactionRef ?? '—',
+      'date': date,
+      'status': isSuccess ? 'successful' : 'failed',
+      'isReprint': 'false',
+      'reprintCount': '1',
+    };
+
+    await PrinterDispatch.run(
+      printBuiltin: () => PrintHelper.printReceipt(
+        receiptDetails.map((key, value) => MapEntry(key, value.toString())),
+      ),
+      printBluetooth: () => BluetoothPrinterHelper.printReceipt(receiptDetails),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +217,35 @@ class CollectionResultBody extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                       ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            side: const BorderSide(
+                              color: AppColors.borderMedium,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () => _printReceipt(context, state),
+                          icon: const Icon(
+                            Iconsax.printer,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                          label: const Text(
+                            'Print receipt',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       GradientButton(
                         label: 'Done',
                         onPressed: () => Navigator.of(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:auth_repo/auth_repo.dart';
 import 'package:bloc/bloc.dart';
@@ -41,14 +42,24 @@ class CollectionsCubit extends Cubit<CollectionsState> {
   }
 
   Future<void> submit() async {
-    final phone = state.phoneNumber.trim();
+    var phone = '';
+    if(phone.length > 10) {
+      phone = state.phoneNumber.trim();
+    } 
+    else {
+      phone = '26${state.phoneNumber.trim()}';
+    }
+    // if (phone.length < 11) {
+    //   phone = '260+$phone';
+    // }
+    log('Phone number: $phone');
     if (phone.isEmpty) {
       emit(state.copyWith(errorMessage: 'Enter a customer phone number'));
       return;
     }
     final amount = state.amount;
     if (amount == null) {
-      emit(state.copyWith(errorMessage: 'Choose an amount'));
+      emit(state.copyWith(errorMessage: 'Enter or Choose an amount'));
       return;
     }
 

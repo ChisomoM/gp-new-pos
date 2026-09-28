@@ -145,17 +145,7 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                                   ),
                                 ),
                                 const SizedBox(width: 7),
-                                const Flexible(
-                                  child: Text(
-                                    'Checking every 10 seconds · up to 5 '
-                                    'minutes',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                ),
+                              
                               ],
                             ),
                           ),
