@@ -1,8 +1,7 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:geepay_pos/utils/app_icons.dart';
+import 'package:geepay_pos/app/theme/app_logos.dart';
 import 'package:geepay_pos/utils/constants.dart';
-import 'package:geepay_pos/utils/enums.dart';
 import 'package:geepay_pos/utils/printer_preference.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 import 'package:image/image.dart' as img;
@@ -268,7 +267,7 @@ class BluetoothPrinterHelper {
 
   static Future<List<int>> _logo(Generator generator) async {
     try {
-      final data = await rootBundle.load(AppIcons.receiptLogo);
+      final data = await rootBundle.load(AppLogos.gMark);
       final decoded = img.decodePng(data.buffer.asUint8List());
       if (decoded == null) return [];
       return generator.imageRaster(decoded);
@@ -314,14 +313,14 @@ class BluetoothPrinterHelper {
   static void _showSuccess(String message) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
-      showAppSnackBar(messenger, message: message, type: MessageType.success);
+      showToastOn(messenger, message: message, tone: ToastTone.success);
     }
   }
 
   static void _showError(String message) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
-      showAppSnackBar(messenger, message: message, type: MessageType.error);
+      showToastOn(messenger, message: message, tone: ToastTone.error);
     }
   }
 }

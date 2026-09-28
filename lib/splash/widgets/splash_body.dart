@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_gradients.dart';
-import 'package:geepay_pos/app/theme/app_logos.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/widgets/app_version.dart';
 
 class SplashBody extends StatelessWidget {
@@ -31,7 +29,7 @@ class SplashBody extends StatelessWidget {
               opacity: 0.08,
               child: ColorFiltered(
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  AppColors.onBrandHigh,
                   BlendMode.srcIn,
                 ),
                 child: Image.asset(AppLogos.gMark, width: 625, height: 701),
@@ -42,21 +40,19 @@ class SplashBody extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(AppLogos.gMark, width: 56, height: 56),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpace.x4),
               Image.asset(AppLogos.wordmarkWhite, width: 170),
-              const SizedBox(height: 44),
+              const SizedBox(height: AppSpace.x12),
               const _PulsingDots(),
             ],
           ),
-          const Positioned(
-            bottom: 36,
+          Positioned(
+            bottom: AppSpace.x8,
             child: DefaultTextStyle(
-              style: TextStyle(
-                fontSize: 11.5,
-                color: Color.fromRGBO(255, 255, 255, 0.4),
-                letterSpacing: 0.2,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.onBrandLow,
               ),
-              child: AppVersion(),
+              child: const AppVersion(),
             ),
           ),
         ],
@@ -115,7 +111,7 @@ class _PulsingDotsState extends State<_PulsingDots>
       mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (i) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.x1),
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -137,10 +133,10 @@ class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 6,
-      height: 6,
+      width: AppSpace.x2,
+      height: AppSpace.x2,
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.onBrandHigh,
         shape: BoxShape.circle,
       ),
     );

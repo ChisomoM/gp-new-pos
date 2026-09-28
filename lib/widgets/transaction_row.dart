@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_text_styles.dart';
-import 'package:geepay_pos/widgets/status_badge_pill.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/widgets/list_group.dart';
+import 'package:geepay_pos/widgets/money_text.dart';
+import 'package:geepay_pos/widgets/pressable.dart';
+import 'package:geepay_pos/widgets/status_badge.dart';
 
-/// Transaction row per the design spec's component patterns: circular
-/// initial avatar (colored by channel), phone number + channel/type
-/// caption, right-aligned `.gp-num` amount + status badge pill.
+/// Transaction row: channel initial avatar, phone number and caption,
+/// right-aligned amount and status badge.
+///
+/// Avatars use channel colours that are deliberately unlike the status
+/// colours, so an Airtel row never looks "failed" before the badge is read.
 class TransactionRow extends StatelessWidget {
   const TransactionRow({
     required this.title,
     required this.subtitle,
-    required this.amountLabel,
+    required this.amount,
     required this.status,
     required this.avatarLetter,
+    this.currency = 'ZMW',
     this.onTap,
     super.key,
   });
 
   final String title;
   final String subtitle;
-  final String amountLabel;
+  final num amount;
+  final String currency;
   final String status;
   final String avatarLetter;
   final VoidCallback? onTap;
@@ -27,66 +33,51 @@ class TransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (fg, bg) = switch (avatarLetter.toUpperCase()) {
-      'M' => (AppColors.warningText, AppColors.warningFill),
-      'Z' => (const Color(0xFF00953B), const Color(0xFFE3FBE9)),
-      _ => (AppColors.dangerIcon, AppColors.dangerFill),
+      'M' => (AppColors.channelMtnText, AppColors.channelMtnFill),
+      'A' => (AppColors.channelAirtelText, AppColors.channelAirtelFill),
+      'Z' => (AppColors.channelZamtelText, AppColors.channelZamtelFill),
+      _ => (AppColors.textSecondary, AppColors.surfaceSubtle),
     };
-    return InkWell(
+    return Pressable(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceWhite,
-          border: Border.all(color: AppColors.borderLight),
-          borderRadius: BorderRadius.circular(14),
-        ),
+      pressScale: 0.99,
+      borderRadius: AppRadius.brLg,
+      color: AppColors.surfaceWhite,
+      border: Border.all(color: AppColors.borderLight),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.x3),
         child: Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              child: Text(
-                avatarLetter,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: fg,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+            AppAvatar(initial: avatarLetter, color: fg, background: bg),
+            const SizedBox(width: AppSpace.x3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodyStrong,
                   ),
-                  const SizedBox(height: 1),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textMuted,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: AppSpace.x2),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(amountLabel, style: AppTextStyles.gpNum(fontSize: 13)),
-                const SizedBox(height: 3),
-                StatusBadgePill(status: status),
+                MoneyText(amount, currency: currency),
+                const SizedBox(height: AppSpace.x1),
+                StatusBadge.transaction(status),
               ],
             ),
           ],

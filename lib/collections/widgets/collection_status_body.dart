@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_text_styles.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/collections/cubit/cubit.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class CollectionStatusBody extends StatefulWidget {
   const CollectionStatusBody({super.key});
@@ -30,18 +27,18 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
   Widget build(BuildContext context) {
     return BlocBuilder<CollectionsCubit, CollectionsState>(
       builder: (context, state) {
-        final amount = state.amount?.toStringAsFixed(2) ?? '0.00';
+        final amount = Money.withCurrency(state.amount ?? 0);
         return Column(
           children: [
-            const BackHeader(title: 'Payment request'),
+            const AppHeader(title: 'Payment request'),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(AppSpace.x8),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 64, // minus padding
+                        minHeight: constraints.maxHeight - AppSpace.x16,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -69,30 +66,24 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                                   ),
                                 ),
                                 const Icon(
-                                  Iconsax.call,
-                                  size: 34,
+                                  AppIcons.phone,
+                                  size: AppIconSize.xl,
                                   color: AppColors.gpCobalt,
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: AppSpace.x6),
                           Text(
                             'Waiting for confirmation',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.dmSans(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 19,
-                              color: AppColors.textPrimary,
-                            ),
+                            style: AppTextStyles.title2,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpace.x2),
                           RichText(
                             textAlign: TextAlign.center,
                             text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                height: 1.5,
+                              style: AppTextStyles.body.copyWith(
                                 color: AppColors.textTertiary,
                               ),
                               children: [
@@ -101,16 +92,15 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                                 ),
                                 TextSpan(
                                   text: state.phoneNumber,
-                                  style: const TextStyle(
+                                  style: AppTextStyles.bodyStrong.copyWith(
                                     color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const TextSpan(text: ' for '),
                                 TextSpan(
-                                  text: 'ZMW $amount',
+                                  text: amount,
                                   style: AppTextStyles.gpNum(
-                                    fontSize: 13.5,
+                                    fontSize: AppTextStyles.numSm,
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
@@ -122,15 +112,15 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                               ],
                             ),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: AppSpace.x6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 7,
+                              horizontal: AppSpace.x3,
+                              vertical: AppSpace.x2,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceWhite,
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: AppRadius.brFull,
                               border: Border.all(color: AppColors.borderLight),
                             ),
                             child: Row(
@@ -144,14 +134,13 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                                     shape: BoxShape.circle,
                                   ),
                                 ),
-                                const SizedBox(width: 7),
-                                const Flexible(
+                                const SizedBox(width: AppSpace.x2),
+                                Flexible(
                                   child: Text(
                                     'Checking every 10 seconds · up to 5 '
                                     'minutes',
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: AppTextStyles.caption.copyWith(
                                       color: AppColors.textTertiary,
                                     ),
                                   ),
@@ -174,30 +163,18 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        side: const BorderSide(color: AppColors.borderMedium),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        context.read<CollectionsCubit>().cancel();
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'Cancel request',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.gutter,
+                    AppSpace.x3,
+                    AppSpace.gutter,
+                    AppSpace.x4,
+                  ),
+                  child: AppButton.secondary(
+                    label: 'Cancel request',
+                    onPressed: () {
+                      context.read<CollectionsCubit>().cancel();
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:auth_repo/auth_repo.dart';
 import 'package:flutter/material.dart';
+import 'package:geepay_pos/app/theme/app_colors.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
 import 'package:geepay_pos/home/widgets/home_body.dart';
 import 'package:services_repo/services_repo.dart';
@@ -24,7 +25,7 @@ class HomePage extends StatelessWidget {
         context.read<AuthRepo>(),
       ),
       child: const Scaffold(
-        backgroundColor: Color(0xFFF9FAFB),
+        backgroundColor: AppColors.surfacePage,
         body: HomeView(),
       ),
     );

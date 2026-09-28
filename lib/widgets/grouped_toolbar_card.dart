@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_gradients.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/widgets/list_group.dart';
 
-/// Single white radius-2xl card with internal 1px vertical dividers —
-/// design spec's "grouped toolbar card" pattern, used for Dashboard quick
-/// actions.
+/// Single white card with internal 1px vertical dividers: the design
+/// spec's "grouped toolbar card", used for Dashboard quick actions.
+///
+/// The card clips its children so each action's ripple stays inside the
+/// rounded corners.
 class GroupedToolbarCard extends StatelessWidget {
   const GroupedToolbarCard({required this.items, super.key});
 
@@ -18,20 +20,31 @@ class GroupedToolbarCard extends StatelessWidget {
         children.add(
           Container(
             width: 1,
-            margin: const EdgeInsets.symmetric(vertical: 14),
-            color: const Color(0xFFF0F1F5),
+            margin: const EdgeInsets.symmetric(vertical: AppSpace.x4),
+            color: AppColors.borderSubtle,
           ),
         );
       }
       children.add(Expanded(child: items[i]));
     }
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppGradients.card,
+        borderRadius: AppRadius.brLg,
+        boxShadow: AppShadows.card,
       ),
-      child: Row(children: children),
+      child: ClipRRect(
+        borderRadius: AppRadius.brLg,
+        child: Material(
+          type: MaterialType.transparency,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -50,24 +63,32 @@ class GroupedToolbarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Semantics(
+      button: true,
+      label: label,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 16, 6, 14),
-        child: Column(
-          children: [
-            Icon(icon, size: 19, color: AppColors.gpCobalt),
-            const SizedBox(height: 7),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.x2,
+            vertical: AppSpace.x4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIconTile(icon: icon),
+              const SizedBox(height: AppSpace.x2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

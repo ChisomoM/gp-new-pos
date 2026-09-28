@@ -1,6 +1,6 @@
 # Geepay POS: UI/UX Polish Plan
 
-Status: proposal, not yet implemented.
+Status: phases 0 to 2 implemented (see §6). Phases 3 to 8 not started.
 Scope: the Flutter app in `lib/` (visual layer only; no API or behavior changes unless called out).
 Companion to `geepay-pos-design-spec.md`, which defines brand tokens. This plan extends that spec into a full design system and a prioritised rollout.
 
@@ -80,6 +80,7 @@ Patterns worth calling out:
 - Two different back glyphs: `Iconsax.arrow_left_2` in `BackHeader`, Material `arrow_back_ios_new` in Printer settings.
 - **Semantic mismatches**: "Collections" (receiving money) and "Request payment" use `Iconsax.send_2`, which reads as sending money. Dashboard bell icon has no action. "Updates" uses a refresh icon tinted success green.
 - Bottom nav uses the same outline icon for active and inactive; only colour changes.
+- **Filled icons everywhere by accident**: in `iconsax_flutter` 1.0.1 the plain names (`Iconsax.home`, `Iconsax.arrow_left_2`) are the filled *Bold* glyphs and the `_copy` names are the *Linear* outlines. The app used the plain names, so every icon rendered filled, and the back button was a filled circle with an arrow in it. `AppIcons` now maps every icon to its Linear glyph and keeps Bold for active states.
 - `AppIcons` exists but is mostly legacy (Zicta, Zed money, master card assets) and not used by the new screens, which import `Iconsax` directly.
 
 ### 1.6 Components
@@ -410,15 +411,22 @@ Each phase is a separate PR, reviewable on its own. Earlier phases carry no scre
 
 | Phase | Scope | Deliverables | Size |
 |---|---|---|---|
-| **0. Foundations** | Tokens only | `AppSpace`, `AppRadius`, `AppShadows`, `AppMotion`, `AppIconSize`, text styles wired into `ThemeData.textTheme` + `context.text` extension, colour token additions and contrast fix, `AppIcons` semantic map, `MoneyText`. Remove stray fonts (Poppins, Lato, Manrope, Ubuntu) and dead widgets. | S |
-| **1. Core components** | Shared widgets | `AppButton`, `AppTextField` family, `AppChoiceChip`, `AppCard`, `ListGroup` / `AppListTile`, `KeyValueList`, `StatusBadge`, `AppHeader`, `SectionHeader`, `EmptyState`, `ErrorState`, `Skeleton*`. Fixes the ripple bug everywhere at once. Golden tests for each. | M |
-| **2. Shell and feedback** | App-wide | `AppNavBar`, `IndexedStack` tabs, page transitions theme, `AppToast`, `AppDialog`, `AppSheet`. | M |
+| **0. Foundations** (done) | Tokens only | `AppSpace`, `AppRadius`, `AppShadows`, `AppMotion`, `AppIconSize`, text styles wired into `ThemeData.textTheme` + `context.text` extension, colour token additions and contrast fix, `AppIcons` semantic map, `MoneyText`. Remove stray fonts (Poppins, Lato, Manrope, Ubuntu) and dead widgets. | S |
+| **1. Core components** (done) | Shared widgets | `AppButton`, `AppTextField` family, `AppChoiceChip`, `AppCard`, `ListGroup` / `AppListTile`, `KeyValueList`, `StatusBadge`, `AppHeader`, `SectionHeader`, `EmptyState`, `ErrorState`, `Skeleton*`. Fixes the ripple bug everywhere at once. Golden tests for each. | M |
+| **2. Shell and feedback** (done) | App-wide | `AppNavBar`, `IndexedStack` tabs, page transitions theme, `AppToast`, `AppDialog`, `AppSheet`. | M |
 | **3. Dashboard** | Highest traffic | Hero stats, quick actions, recent list, skeleton / empty / error. | M |
 | **4. Collection flow** | Core task | New collection, waiting, result (success moment). | M |
 | **5. History + Details** | High frequency | Grouping, filters, refresh, receipt layout. | M |
 | **6. Settings + Printer** | Utility screens | Token alignment, printer rebuild on components. | M |
 | **7. Auth + Splash + placeholders** | First impression | Field unification, CTA cleanup, splash motion. | S |
 | **8. Polish pass** | Whole app | On-device review at 360dp and a large POS screen, reduce-motion check, contrast check, haptics review, remove any remaining lint violations. | S |
+
+What shipped in phases 0 to 2:
+
+- Tokens in `lib/app/theme/` (import `design_system.dart`): `AppColors`, `AppSpace` / `AppSize`, `AppRadius`, `AppShadows`, `AppMotion`, `AppTextStyles`, `AppIcons` / `AppIconSize`, and a light-only `AppTheme` that themes stock Material widgets from them.
+- Components in `lib/widgets/`: `Pressable` (the ripple fix), `AppButton` / `AppIconButton`, `AppTextField` / `AppPasswordField`, `AppChoiceChip`, `AppCard`, `ListGroup` / `AppListTile` / `AppIconTile` / `AppAvatar`, `KeyValueList`, `StatusBadge`, `AppHeader` / `SectionHeader`, `EmptyState` / `ErrorState`, `Skeleton*`, `MoneyText` / `Money`, `AppNavBar`, `showToast` / `AppToast`, `showAppDialog` / `AppDialog`, `showAppSheet` / `AppSheet`.
+- Shell: tabs kept alive with a cross-fade (History keeps its filter and scroll), Home and History refresh on return, and one page transition across the app.
+- Existing screens were switched onto the components (no layout redesign yet), 19 unused files were removed (plus 4 replaced by the new components), and `tool/design_lint.sh` reports 0 violations (down from 346).
 
 Recommended order rationale: phases 0 to 2 remove most inconsistencies automatically because screens already share `BackHeader`, `TransactionRow`, `GradientButton` and `AppTextField`. Screen phases then only handle layout and data presentation.
 
@@ -443,10 +451,10 @@ Definition of done for every phase:
 - **Component catalogue**: a debug-only "Design system" screen (reachable from Settings in dev flavour) listing tokens and components, so drift is visible.
 - Update `geepay-pos-design-spec.md` to point at this document for anything beyond brand colours.
 
-### Open decisions for product / design
+### Decisions
 
-1. Currency notation: `ZMW 20.00` everywhere, or `K20` allowed in compact chips?
-2. Channel avatars: operator logos or neutral initials with non-semantic channel colours?
-3. Keep "Coming soon" entry points (Cashier summary, Company profile, Share, Print on details) visible or hide them until built?
-4. Dark mode: confirm out of scope so `AppDarkTheme` can be removed.
-5. Dashboard bell: remove or build notifications?
+1. Currency notation: `ZMW 20.00` in data; `K20` is allowed on the compact amount-preset chips.
+2. Channel avatars: keep initials, coloured with non-semantic channel tokens (`AppColors.channel*`).
+3. "Coming soon" entry points stay visible; they open a `PlaceholderScreen` with a Coming soon badge, or show a toast.
+4. Dark mode is out of scope; `AppDarkTheme`, the dark colour scheme and `ThemeCubit` were removed.
+5. Dashboard bell: hidden until notifications exist.

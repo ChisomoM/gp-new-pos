@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_gradients.dart';
-import 'package:geepay_pos/app/theme/app_logos.dart';
-import 'package:geepay_pos/app/theme/app_text_styles.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
 import 'package:geepay_pos/collections/collections.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
@@ -11,8 +8,6 @@ import 'package:geepay_pos/transaction_details/transaction_details.dart';
 import 'package:geepay_pos/transaction_history/transaction_history.dart';
 import 'package:geepay_pos/utils/screen_size.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 String _greeting() {
   final hour = DateTime.now().hour;
@@ -43,7 +38,12 @@ class HomeBody extends StatelessWidget {
                 child: _Hero(userName: userName, state: state),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 48, 20, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.gutter,
+                  AppSpace.x12,
+                  AppSpace.gutter,
+                  AppSpace.x4,
+                ),
                 sliver: SliverToBoxAdapter(
                   child: Transform.translate(
                     offset: const Offset(0, -20),
@@ -53,20 +53,14 @@ class HomeBody extends StatelessWidget {
                         GroupedToolbarCard(
                           items: [
                             GroupedToolbarItem(
-                              icon: Iconsax.send_2,
+                              icon: AppIcons.receive,
                               label: 'Collections',
                               onTap: () => Navigator.of(
                                 context,
                               ).push(CollectionsPage.route()),
                             ),
-                            // GroupedToolbarItem(
-                            //   icon: Iconsax.box_1,
-                            //   label: 'Packages',
-                            //   onTap: () =>
-                            //       _openPlaceholder(context, 'Packages'),
-                            // ),
                             GroupedToolbarItem(
-                              icon: Iconsax.chart_21,
+                              icon: AppIcons.summary,
                               label: 'Summary',
                               onTap: () => _openPlaceholder(
                                 context,
@@ -75,44 +69,15 @@ class HomeBody extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Recent transactions',
-                              style: GoogleFonts.dmSans(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).push(TransactionHistoryPage.route()),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 4,
-                                  ),
-                                  child: Text(
-                                    'View all',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.gpCobalt,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: AppSpace.section),
+                        SectionHeader(
+                          title: 'Recent transactions',
+                          actionLabel: 'View all',
+                          onAction: () => Navigator.of(
+                            context,
+                          ).push(TransactionHistoryPage.route()),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppSpace.x2),
                         _RecentTransactions(state: state),
                       ],
                     ),
@@ -146,10 +111,15 @@ class _Hero extends StatelessWidget {
     final counts = state.data?.statusCounts;
     final amount = state.data?.totalSuccessfulAmount ?? 0;
     final currency = state.data?.currency ?? 'ZMW';
+    // Only show the skeleton on first load; refreshes keep the last value
+    // on screen and count up to the new one.
+    final showSkeleton = state.isLoading && state.data == null;
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: AppGradients.hero,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(AppRadius.xl),
+        ),
       ),
       child: Stack(
         children: [
@@ -160,7 +130,7 @@ class _Hero extends StatelessWidget {
               opacity: 0.10,
               child: ColorFiltered(
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  AppColors.onBrandHigh,
                   BlendMode.srcIn,
                 ),
                 child: Image.asset(AppLogos.gMark, width: wp(265)),
@@ -170,109 +140,88 @@ class _Hero extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 26),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.gutter,
+                AppSpace.x6,
+                AppSpace.gutter,
+                AppSpace.x6,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _greeting(),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color.fromRGBO(255, 255, 255, 0.68),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              userName.isEmpty ? 'Cashier' : userName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.dmSans(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 21,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 38,
-                        height: 38,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color.fromRGBO(255, 255, 255, 0.16),
-                          ),
-                          color: const Color.fromRGBO(255, 255, 255, 0.08),
-                        ),
-                        child: const Icon(
-                          Iconsax.notification,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    _greeting(),
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.onBrandMid,
+                    ),
+                  ),
+                  Text(
+                    userName.isEmpty ? 'Cashier' : userName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.title2.copyWith(
+                      color: AppColors.onBrandHigh,
+                    ),
                   ),
                   Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    padding: const EdgeInsets.only(top: 18),
+                    margin: const EdgeInsets.only(top: AppSpace.x5),
+                    padding: const EdgeInsets.only(top: AppSpace.x4),
                     decoration: const BoxDecoration(
                       border: Border(
-                        top: BorderSide(
-                          color: Color.fromRGBO(255, 255, 255, 0.12),
-                        ),
+                        top: BorderSide(color: AppColors.onBrandStroke),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           "TODAY'S COLLECTIONS",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromRGBO(255, 255, 255, 0.6),
-                            letterSpacing: 0.6,
+                          style: AppTextStyles.overline.copyWith(
+                            color: AppColors.onBrandLow,
                           ),
                         ),
-                        // const SizedBox(height: ),
-                        if (state.isLoading) const SizedBox(
-                                height: 32,
-                                width: 32,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    Colors.white,
+                        const SizedBox(height: AppSpace.x1),
+                        SizedBox(
+                          height: 40,
+                          child: AnimatedSwitcher(
+                            duration: AppMotion.of(context, AppMotion.base),
+                            layoutBuilder: (current, previous) => Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [...previous, ?current],
+                            ),
+                            child: showSkeleton
+                                ? const Skeleton(
+                                    key: ValueKey('skeleton'),
+                                    onBrand: true,
+                                    child: SkeletonBox(
+                                      width: 180,
+                                      height: AppSpace.x8,
+                                      borderRadius: AppRadius.brSm,
+                                    ),
+                                  )
+                                : MoneyText(
+                                    amount,
+                                    key: const ValueKey('amount'),
+                                    currency: currency,
+                                    fontSize: AppTextStyles.numDisplay,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.onBrandHigh,
+                                    mutedColor: AppColors.onBrandMid,
+                                    muteDecimals: true,
+                                    animate: true,
                                   ),
-                                ),
-                              ) else Text(
-                                '$currency ${amount.toStringAsFixed(2)}',
-                                style: AppTextStyles.gpNum(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 32,
-                                  color: Colors.white,
-                                ),
-                              ),
-                        const SizedBox(height: 10),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpace.x2),
                         Row(
                           children: [
                             _Dot(
-                              color: const Color(0xFF6EE7B7),
+                              color: AppColors.successOnBrand,
                               label: '${counts?.successful ?? 0} successful',
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: AppSpace.x4),
                             _Dot(
-                              color: const Color(0xFFFCA5A5),
+                              color: AppColors.dangerOnBrand,
                               label: '${counts?.failed ?? 0} failed',
                             ),
                           ],
@@ -302,17 +251,14 @@ class _Dot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 7,
-          height: 7,
+          width: AppSpace.x2,
+          height: AppSpace.x2,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: AppSpace.x2),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            color: Color.fromRGBO(255, 255, 255, 0.78),
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.onBrandMid),
         ),
       ],
     );
@@ -326,53 +272,62 @@ class _RecentTransactions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (state.status == HomeStatus.failure) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Text(
-          state.errorMessage ?? 'Unable to load transactions',
-          style: const TextStyle(fontSize: 13, color: AppColors.dangerIcon),
-        ),
-      );
-    }
     final transactions = state.data?.transactions ?? const <Transaction>[];
-    if (transactions.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: Text(
-            'No transactions yet today',
-            style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-          ),
+    final Widget child;
+    if (state.isLoading && state.data == null) {
+      child = const SkeletonTransactionList(
+        key: ValueKey('loading'),
+        count: 3,
+      );
+    } else if (state.status == HomeStatus.failure && state.data == null) {
+      child = ErrorState(
+        key: const ValueKey('error'),
+        title: "Couldn't load transactions",
+        message: state.errorMessage,
+        onRetry: () => context.read<HomeCubit>().load(),
+      );
+    } else if (transactions.isEmpty) {
+      child = EmptyState(
+        key: const ValueKey('empty'),
+        icon: AppIcons.receipt,
+        title: 'No transactions yet today',
+        message: 'Collections you take today will show up here.',
+        action: AppButton.secondary(
+          label: 'New collection',
+          icon: AppIcons.receive,
+          size: AppButtonSize.md,
+          expand: false,
+          onPressed: () => Navigator.of(context).push(CollectionsPage.route()),
         ),
       );
-    }
-    return Column(
-      children: [
-        for (final tx in transactions.take(5))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: TransactionRow(
-              title: tx.phoneNumber,
-              subtitle: '${tx.channelLabel} · Collection',
-              amountLabel: '${tx.currency} ${tx.amount.toStringAsFixed(2)}',
-              status: tx.status,
-              avatarLetter: tx.avatarLetter,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<dynamic>(
-                  builder: (_) =>
-                      TransactionDetailsPage(transactionId: tx.lookupId),
+    } else {
+      child = Column(
+        key: const ValueKey('list'),
+        children: [
+          for (final tx in transactions.take(5))
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.x2),
+              child: TransactionRow(
+                title: tx.phoneNumber,
+                subtitle: '${tx.channelLabel} · Collection',
+                amount: tx.amount,
+                currency: tx.currency,
+                status: tx.status,
+                avatarLetter: tx.avatarLetter,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<dynamic>(
+                    builder: (_) =>
+                        TransactionDetailsPage(transactionId: tx.lookupId),
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      );
+    }
+    return AnimatedSwitcher(
+      duration: AppMotion.of(context, AppMotion.base),
+      child: child,
     );
   }
 }

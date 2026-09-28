@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:geepay_pos/utils/constants.dart';
-import 'package:geepay_pos/utils/enums.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 
 /// Bridge to the device's built-in thermal printer (Trendit / Topwise POS
@@ -47,14 +46,14 @@ class PrintHelper {
   static void _showSuccess(String message) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
-      showAppSnackBar(messenger, message: message, type: MessageType.success);
+      showToastOn(messenger, message: message, tone: ToastTone.success);
     }
   }
 
   static void _showError(String message) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
-      showAppSnackBar(messenger, message: message, type: MessageType.error);
+      showToastOn(messenger, message: message, tone: ToastTone.error);
     }
   }
 }
