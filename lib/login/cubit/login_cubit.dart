@@ -15,9 +15,15 @@ class LoginCubit extends Cubit<LoginState> {
     required String password,
   }) async {
     final trimmedEmail = email.trim();
-    if (trimmedEmail.isEmpty || password.isEmpty) {
+    final emailError = trimmedEmail.isEmpty ? 'Enter your email address' : null;
+    final passwordError = password.isEmpty ? 'Enter your password' : null;
+    if (emailError != null || passwordError != null) {
       emit(
-        state.copyWith(errorMessage: 'Email and password are required'),
+        state.copyWith(
+          status: LoginStatus.initial,
+          emailError: emailError,
+          passwordError: passwordError,
+        ),
       );
       return;
     }
@@ -55,7 +61,7 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> submitOtp(String otp) async {
     final trimmedOtp = otp.trim();
     if (trimmedOtp.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Enter the verification code'));
+      emit(state.copyWith(otpError: 'Enter the 6-digit code'));
       return;
     }
 
@@ -75,6 +81,12 @@ class LoginCubit extends Cubit<LoginState> {
               errorMessage: result.message,
             ),
     );
+  }
+
+  /// The user edited a field: clear stale errors so they don't linger while
+  /// the input is being corrected.
+  void fieldChanged() {
+    if (state.hasErrors) emit(state.copyWith());
   }
 
   /// Drops back from the OTP step to the email/password form.

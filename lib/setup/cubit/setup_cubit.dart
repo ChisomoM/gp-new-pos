@@ -17,6 +17,11 @@ class SetupCubit extends Cubit<SetupState> {
     emit(state.copyWith(deviceId: deviceId));
   }
 
+  /// The business name was edited: clear its validation error.
+  void nameChanged() {
+    if (state.nameError != null) emit(state.copyWith());
+  }
+
   /// Registers this device with `gp_pos_tms`.
   ///
   /// `serial_number`/`finger_print` fall back to the app-generated device
@@ -32,7 +37,7 @@ class SetupCubit extends Cubit<SetupState> {
   }) async {
     final name = businessName.trim();
     if (name.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Business name is required'));
+      emit(state.copyWith(nameError: 'Enter your business name'));
       return;
     }
 

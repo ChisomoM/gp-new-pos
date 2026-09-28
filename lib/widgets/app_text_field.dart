@@ -31,6 +31,7 @@ class AppTextField extends StatefulWidget {
     this.inputFormatters,
     this.focusNode,
     this.labelTrailing,
+    this.autofillHints,
     super.key,
   });
 
@@ -64,6 +65,9 @@ class AppTextField extends StatefulWidget {
 
   /// Optional widget on the right of the label row.
   final Widget? labelTrailing;
+
+  /// Lets password managers and SMS code autofill fill the field.
+  final Iterable<String>? autofillHints;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -115,6 +119,7 @@ class _AppTextFieldState extends State<AppTextField> {
           onSubmitted: widget.onSubmitted,
           inputFormatters: widget.inputFormatters,
           obscureText: _obscured,
+          autofillHints: widget.enabled ? widget.autofillHints : null,
           style: widget.textStyle ?? AppTextStyles.bodyLg,
           cursorColor: AppColors.gpCobalt,
           decoration: InputDecoration(
@@ -189,10 +194,12 @@ class AppPasswordField extends StatelessWidget {
     this.enabled = true,
     this.fillColor = AppColors.surfaceWhite,
     this.onSubmitted,
+    this.onChanged,
     super.key,
   });
 
   final TextEditingController controller;
+  final ValueChanged<String>? onChanged;
   final String label;
   final String? errorText;
   final bool enabled;
@@ -209,8 +216,10 @@ class AppPasswordField extends StatelessWidget {
       enabled: enabled,
       fillColor: fillColor,
       onSubmitted: onSubmitted,
+      onChanged: onChanged,
       textInputAction: TextInputAction.done,
       obscureText: true,
+      autofillHints: const [AutofillHints.password],
     );
   }
 }

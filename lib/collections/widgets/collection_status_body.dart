@@ -127,21 +127,20 @@ class _CollectionStatusBodyState extends State<CollectionStatusBody>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 6,
-                                  height: 6,
+                                  width: AppSpace.x2,
+                                  height: AppSpace.x2,
                                   decoration: const BoxDecoration(
                                     color: AppColors.gpSky,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
-                                const SizedBox(width: 7),
-                                const Flexible(
+                                const SizedBox(width: AppSpace.x2),
+                                Flexible(
                                   child: Text(
                                     'Checking every 10 seconds · up to 5 '
                                     'minutes',
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: AppTextStyles.caption.copyWith(
                                       color: AppColors.textTertiary,
                                     ),
                                   ),

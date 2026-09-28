@@ -8,7 +8,9 @@ import 'package:geepay_pos/home/view/home_page.dart';
 import 'package:geepay_pos/main/cubit/main_cubit.dart';
 import 'package:geepay_pos/settings/widgets/settings_body.dart';
 import 'package:geepay_pos/transaction_history/transaction_history.dart';
+import 'package:geepay_pos/utils/constants.dart';
 import 'package:geepay_pos/widgets/app_nav_bar.dart';
+import 'package:geepay_pos/widgets/fade_indexed_stack.dart';
 import 'package:services_repo/services_repo.dart';
 
 /// {@template main_body}
@@ -16,9 +18,10 @@ import 'package:services_repo/services_repo.dart';
 /// Settings).
 ///
 /// Tabs are built the first time they are visited and then kept alive,
-/// so scroll position and filters survive switching. Switching cross-fades
-/// between tabs, and returning to Home or History refreshes their data
-/// without dropping what is already on screen.
+/// so scroll position and filters survive switching. Home and History
+/// refresh without dropping what is on screen when you switch back to
+/// them, and when a pushed screen (for example the Collections flow) pops
+/// back to the dashboard.
 /// {@endtemplate}
 class MainBody extends StatefulWidget {
   /// {@macro main_body}
@@ -31,7 +34,7 @@ class MainBody extends StatefulWidget {
   State<MainBody> createState() => _MainBodyState();
 }
 
-class _MainBodyState extends State<MainBody> {
+class _MainBodyState extends State<MainBody> with RouteAware {
   static const _items = [
     AppNavItem(
       icon: AppIcons.home,
@@ -50,144 +53,98 @@ class _MainBodyState extends State<MainBody> {
     ),
   ];
 
-  final Set<int> _visited = {MainBody.homeTabIndex};
+  late final HomeCubit _home = HomeCubit(
+    context.read<ServicesRepo>(),
+    context.read<AuthRepo>(),
+  );
 
-  void _onTabSelected(BuildContext context, int index) {
-    final current = context.read<MainCubit>().state.currentIndex;
-    if (index != current && _visited.contains(index)) {
-      switch (index) {
-        case MainBody.homeTabIndex:
-          unawaited(context.read<HomeCubit>().load());
-        case MainBody.historyTabIndex:
-          unawaited(context.read<TransactionHistoryCubit>().load());
-      }
-    }
-    setState(() => _visited.add(index));
-    context.read<MainCubit>().changeTab(index);
+  /// Created on the first visit to the History tab; it loads in its
+  /// constructor.
+  TransactionHistoryCubit? _history;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
   }
 
-  Widget _buildTab(int index) {
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    unawaited(_home.close());
+    unawaited(_history?.close());
+    super.dispose();
+  }
+
+  /// A route pushed on top of the dashboard was popped: refresh whichever
+  /// tab is showing so, for example, a just-completed collection appears.
+  @override
+  void didPopNext() => _refresh(context.read<MainCubit>().state.currentIndex);
+
+  void _refresh(int index) {
+    switch (index) {
+      case MainBody.homeTabIndex:
+        unawaited(_home.load());
+      case MainBody.historyTabIndex:
+        unawaited(_history?.load());
+    }
+  }
+
+  void _onTabSelected(int index) {
+    final cubit = context.read<MainCubit>();
+    if (index == cubit.state.currentIndex) return;
+    if (index == MainBody.historyTabIndex && _history == null) {
+      _history = TransactionHistoryCubit(
+        context.read<ServicesRepo>(),
+        context.read<AuthRepo>(),
+      );
+    } else {
+      _refresh(index);
+    }
+    cubit.changeTab(index);
+  }
+
+  Widget _buildTab(BuildContext context, int index) {
     return switch (index) {
-      MainBody.homeTabIndex => const HomeView(),
-      MainBody.historyTabIndex => const TransactionHistoryBody(),
+      MainBody.homeTabIndex => BlocProvider.value(
+        value: _home,
+        child: const HomeView(),
+      ),
+      MainBody.historyTabIndex => BlocProvider.value(
+        value: _history!,
+        child: const TransactionHistoryBody(),
+      ),
       _ => const SettingsBody(),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => HomeCubit(
-            context.read<ServicesRepo>(),
-            context.read<AuthRepo>(),
-          ),
-        ),
-        // Created on first visit to the History tab; the cubit loads in its
-        // constructor.
-        BlocProvider(
-          create: (context) => TransactionHistoryCubit(
-            context.read<ServicesRepo>(),
-            context.read<AuthRepo>(),
-          ),
-        ),
-      ],
-      child: BlocBuilder<MainCubit, MainState>(
-        builder: (context, state) {
-          return PopScope(
-            canPop: state.currentIndex == MainBody.homeTabIndex,
-            onPopInvokedWithResult: (didPop, result) {
-              if (!didPop && state.currentIndex != MainBody.homeTabIndex) {
-                _onTabSelected(context, MainBody.homeTabIndex);
-              }
-            },
-            child: Scaffold(
-              backgroundColor: AppColors.surfacePage,
-              body: _FadeIndexedStack(
-                index: state.currentIndex,
-                visited: _visited,
-                builder: _buildTab,
-                length: _items.length,
-              ),
-              bottomNavigationBar: AppNavBar(
-                items: _items,
-                currentIndex: state.currentIndex,
-                onTap: (index) => _onTabSelected(context, index),
-              ),
+    return BlocBuilder<MainCubit, MainState>(
+      builder: (context, state) {
+        return PopScope(
+          canPop: state.currentIndex == MainBody.homeTabIndex,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && state.currentIndex != MainBody.homeTabIndex) {
+              _onTabSelected(MainBody.homeTabIndex);
+            }
+          },
+          child: Scaffold(
+            backgroundColor: AppColors.surfacePage,
+            body: FadeIndexedStack(
+              index: state.currentIndex,
+              itemCount: _items.length,
+              itemBuilder: _buildTab,
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Like [IndexedStack], but children are built lazily on first visit and
-/// the active child fades in. Inactive children keep their state but are
-/// hidden from hit testing, semantics and tickers.
-class _FadeIndexedStack extends StatelessWidget {
-  const _FadeIndexedStack({
-    required this.index,
-    required this.visited,
-    required this.builder,
-    required this.length,
-  });
-
-  final int index;
-  final Set<int> visited;
-  final Widget Function(int index) builder;
-  final int length;
-
-  @override
-  Widget build(BuildContext context) {
-    final duration = AppMotion.of(context, AppMotion.base);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        for (var i = 0; i < length; i++)
-          if (visited.contains(i))
-            _TabSlot(
-              key: ValueKey(i),
-              active: i == index,
-              duration: duration,
-              child: builder(i),
-            )
-          else
-            const SizedBox.shrink(),
-      ],
-    );
-  }
-}
-
-class _TabSlot extends StatelessWidget {
-  const _TabSlot({
-    required this.active,
-    required this.duration,
-    required this.child,
-    super.key,
-  });
-
-  final bool active;
-  final Duration duration;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: !active,
-      child: ExcludeSemantics(
-        excluding: !active,
-        child: TickerMode(
-          enabled: active,
-          child: AnimatedOpacity(
-            opacity: active ? 1 : 0,
-            duration: duration,
-            curve: active ? AppMotion.enter : AppMotion.exit,
-            child: child,
+            bottomNavigationBar: AppNavBar(
+              items: _items,
+              currentIndex: state.currentIndex,
+              onTap: _onTabSelected,
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

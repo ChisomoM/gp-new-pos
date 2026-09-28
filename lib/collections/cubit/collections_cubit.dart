@@ -42,21 +42,15 @@ class CollectionsCubit extends Cubit<CollectionsState> {
   }
 
   Future<void> submit() async {
-    var phone = '';
-    if(phone.length > 10) {
-      phone = state.phoneNumber.trim();
-    } 
-    else {
-      phone = '26${state.phoneNumber.trim()}';
-    }
-    // if (phone.length < 11) {
-    //   phone = '260+$phone';
-    // }
-    log('Phone number: $phone');
-    if (phone.isEmpty) {
+    final input = state.phoneNumber.trim();
+    if (input.isEmpty) {
       emit(state.copyWith(errorMessage: 'Enter a customer phone number'));
       return;
     }
+    // Local numbers (e.g. 0973042237) get the country prefix; numbers
+    // already in international form (e.g. 260973042237) are sent as is.
+    final phone = input.length > 10 ? input : '26$input';
+    log('Phone number: $phone');
     final amount = state.amount;
     if (amount == null) {
       emit(state.copyWith(errorMessage: 'Enter or Choose an amount'));

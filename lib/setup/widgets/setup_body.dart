@@ -35,9 +35,10 @@ class _SetupBodyState extends State<SetupBody> {
   Widget build(BuildContext context) {
     return BlocBuilder<SetupCubit, SetupState>(
       builder: (context, state) {
-        final deviceCode = state.deviceId == null
-            ? '-'
-            : 'GP-POS-${state.deviceId!.substring(0, 6).toUpperCase()}';
+        final deviceId = state.deviceId;
+        final deviceCode = deviceId == null
+            ? null
+            : 'GP-POS-${deviceId.substring(0, 6).toUpperCase()}';
         return Column(
           children: [
             DecoratedBox(
@@ -95,6 +96,11 @@ class _SetupBodyState extends State<SetupBody> {
                       label: 'Business name',
                       controller: _businessName,
                       hintText: 'e.g. Kashikite Traders',
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.organizationName],
+                      errorText: state.nameError,
+                      onChanged: (_) =>
+                          context.read<SetupCubit>().nameChanged(),
                     ),
                     const SizedBox(height: AppSpace.field),
                     AppTextField(
@@ -102,6 +108,9 @@ class _SetupBodyState extends State<SetupBody> {
                       controller: _businessEmail,
                       hintText: 'you@business.com',
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
+                      helperText: 'Optional',
                     ),
                     const SizedBox(height: AppSpace.field),
                     AppTextField(
@@ -109,6 +118,9 @@ class _SetupBodyState extends State<SetupBody> {
                       controller: _businessPhone,
                       hintText: '0973 042 237',
                       keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      helperText: 'Optional',
                     ),
                     const SizedBox(height: AppSpace.field),
                     AppCard(
@@ -124,34 +136,46 @@ class _SetupBodyState extends State<SetupBody> {
                                   'Device ID',
                                   style: AppTextStyles.bodyStrong,
                                 ),
-                                Text(
-                                  deviceCode,
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.textTertiary,
+                                AnimatedSwitcher(
+                                  duration: AppMotion.of(
+                                    context,
+                                    AppMotion.base,
                                   ),
+                                  child: deviceCode == null
+                                      ? const Padding(
+                                          padding: EdgeInsets.only(
+                                            top: AppSpace.x1,
+                                          ),
+                                          child: Skeleton(
+                                            child: SkeletonBox(width: 104),
+                                          ),
+                                        )
+                                      : Text(
+                                          deviceCode,
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.textTertiary,
+                                          ),
+                                        ),
                                 ),
                               ],
                             ),
                           ),
-                          if (state.deviceId != null)
+                          if (deviceId != null)
                             const StatusBadge(
                               label: 'Detected',
                               tone: BadgeTone.success,
                               showDot: true,
-                            ),
+                            )
+                          else
+                            const StatusBadge(label: 'Detecting'),
                         ],
                       ),
                     ),
-                    if (state.status == SetupStatus.failure &&
-                        state.errorMessage != null) ...[
-                      const SizedBox(height: AppSpace.x3),
-                      Text(
-                        state.errorMessage!,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.dangerText,
-                        ),
-                      ),
-                    ],
+                    AnimatedAlert(
+                      message: state.status == SetupStatus.failure
+                          ? state.errorMessage
+                          : null,
+                    ),
                   ],
                 ),
               ),
