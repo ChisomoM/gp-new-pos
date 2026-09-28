@@ -17,6 +17,7 @@ class CollectionsState extends Equatable {
     this.isSuccessful,
     this.resultTransaction,
     this.pollAttempts = 0,
+    this.isSubmitting = false,
   });
 
   final CollectionsStep step;
@@ -27,6 +28,7 @@ class CollectionsState extends Equatable {
   final bool? isSuccessful;
   final Transaction? resultTransaction;
   final int pollAttempts;
+  final bool isSubmitting;
 
   CollectionsState copyWith({
     CollectionsStep? step,
@@ -37,6 +39,7 @@ class CollectionsState extends Equatable {
     bool? isSuccessful,
     Transaction? resultTransaction,
     int? pollAttempts,
+    bool? isSubmitting,
   }) {
     return CollectionsState(
       step: step ?? this.step,
@@ -47,6 +50,7 @@ class CollectionsState extends Equatable {
       isSuccessful: isSuccessful ?? this.isSuccessful,
       resultTransaction: resultTransaction ?? this.resultTransaction,
       pollAttempts: pollAttempts ?? this.pollAttempts,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
     );
   }
 
@@ -60,5 +64,6 @@ class CollectionsState extends Equatable {
     isSuccessful,
     resultTransaction,
     pollAttempts,
+    isSubmitting,
   ];
 }

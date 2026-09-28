@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geepay_pos/app/theme/app_colors.dart';
+import 'package:geepay_pos/app/theme/app_gradients.dart';
 import 'package:geepay_pos/auth/auth.dart';
 import 'package:geepay_pos/printer_settings/view/printer_settings_page.dart';
 import 'package:geepay_pos/splash/view/splash_page.dart';
@@ -9,10 +10,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 /// {@template settings_body}
-/// Body of the Settings tab — per `Settings.dc.html`: a flat white
-/// [BackHeader] (not a gradient hero — that pattern is Dashboard/Splash-only
-/// per the design spec), a bordered profile summary card, grouped
-/// "Business"/"App" setting tiles and a logout button.
+/// Body of the Settings tab: a flat white [BackHeader], a gradient profile
+/// summary card (the same brand gradient/shadow tokens used for hero
+/// sections and CTA buttons — see [AppGradients.hero]), grouped
+/// "Business"/"App" setting tiles with elevated cards, and a logout button.
 /// {@endtemplate}
 class SettingsBody extends StatelessWidget {
   /// {@macro settings_body}
@@ -73,32 +74,36 @@ class _ProfileCard extends StatelessWidget {
         : (user.phone ?? '');
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'C';
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border.all(color: AppColors.borderLight),
-        borderRadius: BorderRadius.circular(16),
+        gradient: AppGradients.hero,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppGradients.gradientButton,
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 52,
+            height: 52,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.infoFill,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
             ),
             child: Text(
               initial,
               style: GoogleFonts.dmSans(
                 fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: AppColors.gpCobalt,
+                fontSize: 18,
+                color: Colors.white,
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,19 +114,19 @@ class _ProfileCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.dmSans(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
+                    fontSize: 16.5,
+                    color: Colors.white,
                   ),
                 ),
                 if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 1),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.white.withValues(alpha: 0.75),
                     ),
                   ),
                 ],
@@ -166,8 +171,8 @@ class _SettingsCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
-        border: Border.all(color: AppColors.borderLight),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: AppGradients.card,
       ),
       child: Column(children: children),
     );
@@ -190,6 +195,8 @@ class _SettingsTile extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.iconColor = AppColors.gpCobalt,
+    this.iconBackground = AppColors.infoFill,
   });
 
   final IconData icon;
@@ -197,6 +204,8 @@ class _SettingsTile extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final Color iconColor;
+  final Color iconBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -211,10 +220,10 @@ class _SettingsTile extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.infoFill,
+                color: iconBackground,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 17, color: AppColors.gpCobalt),
+              child: Icon(icon, size: 17, color: iconColor),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -301,6 +310,8 @@ class _UpdatesTile extends StatelessWidget {
     return _SettingsTile(
       icon: Iconsax.refresh_circle,
       title: 'Updates',
+      iconColor: AppColors.successIcon,
+      iconBackground: AppColors.successFill,
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
         decoration: BoxDecoration(

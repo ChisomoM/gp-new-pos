@@ -195,7 +195,8 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                       GradientButton(
                         label: 'Request payment',
                         icon: Iconsax.send_2,
-                        onPressed: cubit.submit,
+                        isLoading: state.isSubmitting,
+                        onPressed: state.isSubmitting ? null : cubit.submit,
                       ),
                       const SizedBox(height: 12),
                       const Row(

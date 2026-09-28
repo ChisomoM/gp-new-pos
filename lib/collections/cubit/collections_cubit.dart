@@ -52,6 +52,7 @@ class CollectionsCubit extends Cubit<CollectionsState> {
       return;
     }
 
+    emit(state.copyWith(isSubmitting: true, errorMessage: ''));
     final transactionRef = const Uuid().v4();
     final deviceId = await _authRepo.getDeviceId();
     final result = await _servicesRepo.collect(
@@ -62,7 +63,7 @@ class CollectionsCubit extends Cubit<CollectionsState> {
     );
     if (isClosed) return;
     if (!result.success) {
-      emit(state.copyWith(errorMessage: result.message));
+      emit(state.copyWith(isSubmitting: false, errorMessage: result.message));
       return;
     }
 
@@ -72,6 +73,7 @@ class CollectionsCubit extends Cubit<CollectionsState> {
         transactionRef: transactionRef,
         errorMessage: '',
         pollAttempts: 0,
+        isSubmitting: false,
       ),
     );
     _startPolling();

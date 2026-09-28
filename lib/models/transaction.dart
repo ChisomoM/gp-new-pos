@@ -5,12 +5,12 @@
 /// for `GET /transactions/list` and `GET /transactions/get/:id`
 /// (`data.data.transaction`, `data.status_counts`, ...) but explicitly
 /// redacts the actual field names of a transaction row
-/// (`"...transaction row fields..."`). The field names read below
-/// (`phone_number`, `amount`, `provider`, `status`, `id`,
-/// `transaction_reference`, `processed_at`) are the best-guess based on the
-/// field names used consistently everywhere else in that doc (the
-/// collection request/response, the name-lookup response) — correct this
-/// mapping once the real shape is confirmed against the live API.
+/// (`"...transaction row fields..."`). [Transaction.fromJson] therefore
+/// checks a short list of plausible key names per field (e.g.
+/// `phone_number`/`msisdn`/`customer_phone`, `amount` as either a number or
+/// a numeric string) instead of assuming one exact shape, so a row still
+/// renders even if the live API's naming differs from the doc's best guess
+/// — narrow this back down once the real shape is confirmed.
 class Transaction {
   const Transaction({
     required this.id,
@@ -24,18 +24,44 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    double parseAmount(dynamic v) {
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    final amountValue =
+        json['amount'] ?? json['transaction_amount'] ?? json['value'];
     return Transaction(
-      id: json['id']?.toString(),
-      reference:
-          (json['transaction_reference'] ?? json['external_reference'] ?? '')
-              as String,
-      phoneNumber: (json['phone_number'] ?? '') as String,
-      amount: ((json['amount'] as num?) ?? 0).toDouble(),
-      currency: (json['currency'] ?? 'ZMW') as String,
-      status: (json['status'] ?? 'pending') as String,
-      provider: json['provider'] as String?,
+      id: (json['id'] ?? json['transaction_id'])?.toString(),
+      reference: ((json['transaction_reference'] ??
+                  json['external_reference'] ??
+                  json['reference'] ??
+                  '') as Object)
+              .toString(),
+      phoneNumber: ((json['phone_number'] ??
+                  json['msisdn'] ??
+                  json['customer_phone'] ??
+                  json['phone'] ??
+                  '') as Object)
+              .toString(),
+      amount: parseAmount(amountValue),
+      currency: ((json['currency'] ?? 'ZMW') as Object).toString(),
+      status: ((json['status'] ?? json['transaction_status'] ?? 'pending')
+              as Object)
+          .toString(),
+      provider: (json['provider'] ??
+              json['channel'] ??
+              json['payment_channel'] ??
+              json['network'])
+          ?.toString(),
       processedAt: DateTime.tryParse(
-        (json['processed_at'] ?? json['created_at'] ?? '') as String,
+        ((json['processed_at'] ??
+                json['completed_at'] ??
+                json['created_at'] ??
+                json['date_created'] ??
+                '') as Object)
+            .toString(),
       ),
     );
   }

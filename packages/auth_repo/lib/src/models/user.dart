@@ -21,7 +21,55 @@ class User extends Equatable {
     required this.deletedAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  /// Hand-written rather than delegating to the generated [_$UserFromJson]:
+  /// that generator reads camelCase keys (`accountType`, `createdAt`, ...),
+  /// but every other endpoint in `pos_mobile_app_endpoints.md` returns
+  /// snake_case JSON (`account_type`, `merchant_id`, `created_at`, ...), and
+  /// the login response's user record's exact field names are undocumented
+  /// (`"user": { "...user record..." }`). This reads both casings and falls
+  /// back across the common shapes a user's display name is sent under, so
+  /// the cashier's name still resolves even if the record uses
+  /// `full_name`/`first_name`+`last_name` instead of a flat `name`.
+  factory User.fromJson(Map<String, dynamic> json) {
+    String? asString(dynamic v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+    final firstName = asString(json['first_name'] ?? json['firstName']);
+    final lastName = asString(json['last_name'] ?? json['lastName']);
+    final combinedName = [
+      if (firstName != null) firstName,
+      if (lastName != null) lastName,
+    ].join(' ');
+    final name = asString(json['name']) ??
+        asString(json['full_name'] ?? json['fullName']) ??
+        (combinedName.isNotEmpty ? combinedName : null) ??
+        asString(json['username']) ??
+        '';
+    return User(
+      id: asString(json['id']) ?? '',
+      avatar: asString(json['avatar']) ?? '',
+      name: name,
+      accountType: asString(json['account_type'] ?? json['accountType']) ??
+          '',
+      email: asString(json['email']) ?? '',
+      phone: asString(json['phone'] ?? json['phone_number']) ?? '',
+      isGmailIdUser:
+          (json['is_gmail_id_user'] ?? json['isGmailIdUser']) as bool? ??
+              false,
+      isAppleIdUser:
+          (json['is_apple_id_user'] ?? json['isAppleIdUser']) as bool? ??
+              false,
+      createdAt: DateTime.tryParse(
+        asString(json['created_at'] ?? json['createdAt']) ?? '',
+      ),
+      updatedAt: DateTime.tryParse(
+        asString(json['updated_at'] ?? json['updatedAt']) ?? '',
+      ),
+      deletedAt: asString(json['deleted_at'] ?? json['deletedAt']) ?? '',
+    );
+  }
 
   factory User.fromDbJson(Map<String, dynamic> json) => _$UserFromDbJson(json);
 
