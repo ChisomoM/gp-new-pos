@@ -69,13 +69,15 @@ class Transaction {
     );
   }
 
-  /// Parses the single-object envelope of `GET /transactions/get/:id`
-  /// (`data.data` as an object, not `data.data.transaction` as an array,
-  /// per `pos_mobile_app_endpoints.md` §4b).
+  /// Parses the response of `GET /transactions/get/:id`.
+  ///
+  /// `OpStatus.data` (passed in as `data`) is already `NetResponse.data` —
+  /// i.e. the raw response body's top-level `data` object, which here *is*
+  /// the transaction row directly. There's no second `data` layer to
+  /// unwrap (confirmed against a live response logged at
+  /// `net_source.dart`'s `Response @ transactions/get/:id`).
   factory Transaction.fromDetailResponse(dynamic data) {
-    final map = data as Map<String, dynamic>;
-    final inner = map['data'] as Map<String, dynamic>? ?? const {};
-    return Transaction.fromJson(inner);
+    return Transaction.fromJson(data as Map<String, dynamic>);
   }
 
   final String? id;
@@ -138,6 +140,12 @@ class TransactionStatusCounts {
 }
 
 /// Parsed result of a `GET /transactions/list` fetch.
+///
+/// `OpStatus.data` (passed in as `fromResponseData`'s `data`) is already
+/// `NetResponse.data` — i.e. the raw response body's top-level `data`
+/// object, which holds `transaction`, `status_counts`, etc. directly.
+/// There's no second `data` layer to unwrap here (that nesting only
+/// applies to `Transaction.fromDetailResponse`'s single-object envelope).
 class TransactionList {
   const TransactionList({
     required this.transactions,
@@ -148,8 +156,7 @@ class TransactionList {
 
   factory TransactionList.fromResponseData(dynamic data) {
     final map = data as Map<String, dynamic>;
-    final inner = map['data'] as Map<String, dynamic>? ?? const {};
-    final rows = (inner['transaction'] as List<dynamic>? ?? const [])
+    final rows = (map['transaction'] as List<dynamic>? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(Transaction.fromJson)
         .toList();
