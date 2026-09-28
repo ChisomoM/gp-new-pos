@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geepay_pos/app/theme/app_colors.dart';
-import 'package:geepay_pos/app/theme/app_text_styles.dart';
+import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/auth/auth_bloc.dart';
 import 'package:geepay_pos/collections/cubit/cubit.dart';
 import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
 import 'package:geepay_pos/utils/print_helper.dart';
@@ -170,6 +170,12 @@ class CollectionResultBody extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpace.x3),
                       ],
+                      AppButton.secondary(
+                        label: 'Print receipt',
+                        icon: AppIcons.printer,
+                        onPressed: () => _printReceipt(context, state),
+                      ),
+                      const SizedBox(height: AppSpace.x3),
                       if (isSuccess)
                         AppButton(
                           label: 'Done',
