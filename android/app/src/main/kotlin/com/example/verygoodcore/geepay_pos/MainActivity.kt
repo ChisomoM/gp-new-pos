@@ -2,6 +2,7 @@ package com.example.verygoodcore.geepay_pos
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import com.topwise.cloudpos.aidl.printer.AidlPrinter
 import com.trendit.basesdk.POSDeviceManager
 import com.trendit.basesdk.device.printer.OnPrintTaskListener
@@ -24,10 +25,41 @@ import io.flutter.plugin.common.MethodChannel
  * actually live on a given terminal.
  */
 class MainActivity : FlutterActivity() {
+    companion object {
+        private const val TAG = "TrenditPrinter"
+    }
+
     private val printChannel = "geepay_pos/print"
 
     private var printerDevice: PrinterDevice? = null
     private val printerHelper = PrinterHelper(this)
+
+    /**
+     * Maps a Trendit `OnPrintTaskListener#onPrintResult` status code (see
+     * [PrinterConstants]) to a human-readable reason. The SDK only ever hands
+     * back this int -- there is no separate exception/message -- so without
+     * this mapping every failure surfaces to Dart as the same opaque
+     * "Failed to print receipt" with no detail.
+     */
+    private fun trenditTaskFailureReason(status: Int): String = when (status) {
+        PrinterConstants.TASK_STATUS_OUT_OF_PAPER -> "Printer is out of paper"
+        PrinterConstants.TASK_STATUS_OVER_HEAT -> "Printer is overheating"
+        PrinterConstants.TASK_STATUS_LOW_POWER -> "Printer battery is too low"
+        PrinterConstants.TASK_STATUS_CANCEL -> "Print task was cancelled"
+        PrinterConstants.TASK_STATUS_ERR -> "Printer reported a general error"
+        PrinterConstants.TASK_STATUS_FAIL -> "Printer reported a failure"
+        else -> "Unknown printer error (status code $status)"
+    }
+
+    private fun failTrenditPrint(
+        result: MethodChannel.Result,
+        statusCode: Int,
+        baseMessage: String,
+    ) {
+        val reason = trenditTaskFailureReason(statusCode)
+        Log.e(TAG, "$baseMessage: $reason (status code $statusCode)")
+        result.error("PRINT_FAILED", "$baseMessage: $reason", statusCode)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -162,7 +194,7 @@ class MainActivity : FlutterActivity() {
                             if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
                                 result.success("Receipt printed successfully")
                             } else {
-                                result.error("PRINT_FAILED", "Failed to print receipt", null)
+                                failTrenditPrint(result, i, "Failed to print receipt")
                             }
                         }
                     }
@@ -285,7 +317,7 @@ class MainActivity : FlutterActivity() {
                             if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
                                 result.success("Zesco receipt printed successfully")
                             } else {
-                                result.error("PRINT_FAILED", "Failed to print Zesco receipt", null)
+                                failTrenditPrint(result, i, "Failed to print Zesco receipt")
                             }
                         }
                     }
@@ -399,7 +431,7 @@ class MainActivity : FlutterActivity() {
                             if (i == PrinterConstants.TASK_STATUS_SUCCESS) {
                                 result.success("Summary printed")
                             } else {
-                                result.error("PRINT_FAILED", "Could not print summary", null)
+                                failTrenditPrint(result, i, "Could not print summary")
                             }
                         }
                     }

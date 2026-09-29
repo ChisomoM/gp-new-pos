@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geepay_pos/app/theme/app_logos.dart';
@@ -311,6 +313,7 @@ class BluetoothPrinterHelper {
   }
 
   static void _showSuccess(String message) {
+    log(message, name: 'BluetoothPrinterHelper');
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       showToastOn(messenger, message: message, tone: ToastTone.success);
@@ -318,6 +321,7 @@ class BluetoothPrinterHelper {
   }
 
   static void _showError(String message) {
+    log(message, name: 'BluetoothPrinterHelper');
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       showToastOn(messenger, message: message, tone: ToastTone.error);

@@ -33,6 +33,7 @@ abstract final class AppIcons {
   static const IconData summary = Iconsax.chart_2_copy;
   static const IconData receipt = Iconsax.receipt_2_copy;
   static const IconData wallet = Iconsax.empty_wallet_copy;
+  static const IconData calendar = Iconsax.calendar_copy;
 
   // Status
   static const IconData success = Iconsax.tick_circle_copy;
@@ -46,6 +47,7 @@ abstract final class AppIcons {
   // Actions
   static const IconData printer = Iconsax.printer_copy;
   static const IconData share = Iconsax.export_1_copy;
+  static const IconData export = Iconsax.document_download_copy;
   static const IconData copy = Iconsax.copy_copy;
   static const IconData refresh = Iconsax.refresh_circle_copy;
   static const IconData logout = Iconsax.logout_copy;

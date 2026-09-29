@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
+import 'package:geepay_pos/cashier_summary/cashier_summary.dart';
 import 'package:geepay_pos/collections/collections.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
 import 'package:geepay_pos/models/transaction.dart';
@@ -62,10 +63,9 @@ class HomeBody extends StatelessWidget {
                             GroupedToolbarItem(
                               icon: AppIcons.summary,
                               label: 'Summary',
-                              onTap: () => _openPlaceholder(
+                              onTap: () => Navigator.of(
                                 context,
-                                'Cashier Summary',
-                              ),
+                              ).push(CashierSummaryPage.route()),
                             ),
                           ],
                         ),
@@ -88,14 +88,6 @@ class HomeBody extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  void _openPlaceholder(BuildContext context, String title) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PlaceholderScreen(title: title),
-      ),
     );
   }
 }

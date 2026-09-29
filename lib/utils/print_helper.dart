@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/services.dart';
 import 'package:geepay_pos/utils/constants.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
@@ -44,6 +46,7 @@ class PrintHelper {
   }
 
   static void _showSuccess(String message) {
+    log(message, name: 'PrintHelper');
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       showToastOn(messenger, message: message, tone: ToastTone.success);
@@ -51,6 +54,7 @@ class PrintHelper {
   }
 
   static void _showError(String message) {
+    log(message, name: 'PrintHelper');
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       showToastOn(messenger, message: message, tone: ToastTone.error);

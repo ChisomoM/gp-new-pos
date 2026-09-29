@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/export/export.dart';
 import 'package:geepay_pos/transaction_details/transaction_details.dart';
 import 'package:geepay_pos/transaction_history/cubit/cubit.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
@@ -8,18 +9,42 @@ import 'package:intl/intl.dart';
 class TransactionHistoryBody extends StatelessWidget {
   const TransactionHistoryBody({super.key});
 
+  Future<void> _export(BuildContext context, TransactionHistoryState state) {
+    return showExportSheet(
+      context,
+      onPdf: () => TransactionExport.transactionsToPdf(
+        title: 'Transaction history',
+        transactions: state.transactions,
+      ),
+      onExcel: () => TransactionExport.transactionsToExcel(
+        title: 'Transaction history',
+        transactions: state.transactions,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TransactionHistoryCubit, TransactionHistoryState>(
       builder: (context, state) {
         final cubit = context.read<TransactionHistoryCubit>();
         final canPop = Navigator.of(context).canPop();
+        final exportAction = AppIconButton(
+          icon: AppIcons.export,
+          tooltip: 'Export',
+          onPressed: state.transactions.isEmpty
+              ? null
+              : () => _export(context, state),
+        );
         return Column(
           children: [
             if (canPop)
-              const AppHeader(title: 'Transaction history')
+              AppHeader(title: 'Transaction history', actions: [exportAction])
             else
-              const AppHeader.large(title: 'Transaction history'),
+              AppHeader.large(
+                title: 'Transaction history',
+                actions: [exportAction],
+              ),
             DecoratedBox(
               decoration: const BoxDecoration(
                 color: AppColors.surfaceWhite,

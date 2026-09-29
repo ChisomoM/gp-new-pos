@@ -1,6 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/auth/auth_bloc.dart';
+import 'package:geepay_pos/models/transaction.dart';
 import 'package:geepay_pos/transaction_details/cubit/cubit.dart';
+import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
+import 'package:geepay_pos/utils/print_helper.dart';
+import 'package:geepay_pos/utils/printer_dispatch.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -21,7 +28,7 @@ class TransactionDetailsBody extends StatelessWidget {
               ),
             ),
             if (state.status == TransactionDetailsStatus.success)
-              const _Footer(),
+              _Footer(transaction: state.transaction!),
           ],
         );
       },
@@ -175,7 +182,39 @@ class _DetailsSkeleton extends StatelessWidget {
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer();
+  const _Footer({required this.transaction});
+
+  final Transaction transaction;
+
+  Future<void> _printReceipt(BuildContext context) async {
+    final tx = transaction;
+    final cashierName = context.read<AuthBloc>().state.user.name ?? '';
+    final receiptDetails = <String, dynamic>{
+      'businessName': 'Geepay',
+      'branchName': '',
+      'username': cashierName.isEmpty ? 'Cashier' : cashierName,
+      'amount': tx.amount.toStringAsFixed(2),
+      'phone': tx.phoneNumber,
+      'paymentChannel': tx.channelLabel,
+      'transactionId': tx.lookupId,
+      'date': (tx.processedAt ?? DateTime.now()).toIso8601String(),
+      'status': tx.isSuccessful ? 'successful' : 'failed',
+      'isReprint': 'true',
+      'reprintCount': '1',
+    };
+
+    log(
+      'Print receipt requested for transaction ${tx.lookupId} '
+      '(reprint, status: ${receiptDetails['status']})',
+      name: 'TransactionDetails.print',
+    );
+    await PrinterDispatch.run(
+      printBuiltin: () => PrintHelper.printReceipt(
+        receiptDetails.map((key, value) => MapEntry(key, value.toString())),
+      ),
+      printBluetooth: () => BluetoothPrinterHelper.printReceipt(receiptDetails),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -210,10 +249,7 @@ class _Footer extends StatelessWidget {
                 child: AppButton(
                   label: 'Print receipt',
                   icon: AppIcons.printer,
-                  onPressed: () {
-                    // TODO(anyone): wire to a working printer integration.
-                    showToast(context, message: 'Printing is coming soon');
-                  },
+                  onPressed: () => _printReceipt(context),
                 ),
               ),
             ],

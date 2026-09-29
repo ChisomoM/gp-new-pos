@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
+import 'package:geepay_pos/company_profile/company_profile.dart';
 import 'package:geepay_pos/printer_settings/view/printer_settings_page.dart';
 import 'package:geepay_pos/splash/view/splash_page.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
@@ -34,12 +35,9 @@ class SettingsBody extends StatelessWidget {
                     AppListTile(
                       leading: const AppIconTile(icon: AppIcons.business),
                       title: 'Company profile',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              const PlaceholderScreen(title: 'Company profile'),
-                        ),
-                      ),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).push(CompanyProfilePage.route()),
                     ),
                     AppListTile(
                       leading: const AppIconTile(icon: AppIcons.printer),
