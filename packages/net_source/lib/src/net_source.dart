@@ -280,7 +280,6 @@ class NetSource {
         data: data,
         queryParameters: params,
       );
-      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       return response.data;
     } catch (e) {
