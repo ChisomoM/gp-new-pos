@@ -4,7 +4,6 @@ import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
 import 'package:geepay_pos/company_profile/company_profile.dart';
 import 'package:geepay_pos/printer_settings/view/printer_settings_page.dart';
-import 'package:geepay_pos/splash/view/splash_page.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 
 /// {@template settings_body}
@@ -182,11 +181,9 @@ class _LogoutButton extends StatelessWidget {
       icon: AppIcons.logout,
     );
     if (confirmed != true || !context.mounted) return;
+    // Navigation to the login screen is handled by the AuthBloc listener in
+    // App once the session has actually been cleared.
     context.read<AuthBloc>().add(AuthLogoutRequested());
-    await Navigator.of(context).pushAndRemoveUntil(
-      SplashPage.route(),
-      (route) => false,
-    );
   }
 
   @override

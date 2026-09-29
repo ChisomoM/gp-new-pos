@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:auth_repo/src/auth_core.dart';
 import 'package:auth_repo/src/auth_utils.dart';
@@ -63,6 +64,7 @@ class AuthRepo {
     _authUtils = AuthUtils(_net, _prefs, _isDev, _themeController);
 
     _progressSub = _net.uploadProgress.listen(_progressController.add);
+    _unauthorizedSub = _net.unauthorized.listen((_) => _expireSession());
   }
 
   final SharedPrefs _prefs;
@@ -80,6 +82,7 @@ class AuthRepo {
   late final AuthUtils _authUtils;
 
   late StreamSubscription<int> _progressSub;
+  late StreamSubscription<void> _unauthorizedSub;
   final _controller = StreamController<AuthStatus>.broadcast();
   final _progressController = StreamController<int>.broadcast();
   final _themeController = StreamController<int>.broadcast();
@@ -172,7 +175,7 @@ class AuthRepo {
   Stream<AuthStatus> get status async* {
     await getDeviceId();
     final token = await _prefs.getString(AuthConstants.keyToken);
-    final isLoggedIn = token != null;
+    final isLoggedIn = token != null && !isTokenExpired(token);
     if (isLoggedIn) {
       yield AuthStatus.authenticated;
     } else {
@@ -180,6 +183,12 @@ class AuthRepo {
       yield AuthStatus.unauthenticated;
     }
     yield* _controller.stream;
+  }
+
+  /// Clears the stored session and tells listeners it has expired.
+  Future<void> _expireSession() async {
+    await logOut();
+    _controller.add(AuthStatus.expired);
   }
 
   /// The progress of an upload
@@ -197,5 +206,23 @@ class AuthRepo {
     _progressController.close();
     _themeController.close();
     _progressSub.cancel();
+    _unauthorizedSub.cancel();
+  }
+}
+
+/// Whether the JWT [token] has passed its `exp` claim. Tokens that can't be
+/// decoded or carry no `exp` are treated as not expired; the server decides.
+bool isTokenExpired(String token, {DateTime? now}) {
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+    final payload =
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final exp = (jsonDecode(payload) as Map<String, dynamic>)['exp'];
+    if (exp is! num) return false;
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
+    return !(now ?? DateTime.now()).isBefore(expiry);
+  } catch (_) {
+    return false;
   }
 }

@@ -119,7 +119,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await repo.logOut();
-    add(const AuthStatusChanged(AuthStatus.unauthenticated));
+    if (isClosed) return;
+    emit(state.copyWith(status: AuthStatus.unauthenticated));
   }
 
   Future<User?> _tryGetUser() async {

@@ -83,12 +83,27 @@ class NetSource {
       'No Internet Connection. Ensure you are connected and try again.';
 
   final _controller = StreamController<int>();
+  final _unauthorized = StreamController<void>.broadcast();
   final _netState = StreamController<bool>();
 
   /// Authentication status of user at any given point
   Stream<int> get uploadProgress async* {
     yield 0;
     yield* _controller.stream;
+  }
+
+  /// Emits whenever a protected route rejects the session token (HTTP 401),
+  /// i.e. the access token has expired or is no longer valid.
+  Stream<void> get unauthorized => _unauthorized.stream;
+
+  /// Routes where a 401 means bad credentials rather than an expired session.
+  static const _publicRoutes = ['auth/', 'registration', 'v1/pos/register'];
+
+  void _checkUnauthorized(String route, int? statusCode) {
+    if (statusCode != 401) return;
+    if (_publicRoutes.any(route.startsWith)) return;
+    log('Session expired @ $route');
+    _unauthorized.add(null);
   }
 
   /// Network status at any given point
@@ -115,6 +130,7 @@ class NetSource {
         data: data,
         queryParameters: params,
       );
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       return NetResponse.fromJson(response.data!);
     } catch (e) {
@@ -142,6 +158,7 @@ class NetSource {
         data: body,
         options: headers == null ? null : Options(headers: headers),
       );
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       return NetResponse.fromJson(response.data as JsonMap);
     } catch (e) {
@@ -160,6 +177,7 @@ class NetSource {
         return NetResponse(status: 2, message: noConnection);
       }
       final response = await _client.put<JsonMap>(route, data: body);
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       return NetResponse.fromJson(response.data!);
     } catch (e) {
@@ -191,6 +209,7 @@ class NetSource {
           log('progress: ${progress.toStringAsFixed(0)}% ($sent/$total)');
         },
       );
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       _controller.add(0);
       return NetResponse.fromJson(response.data!);
@@ -235,6 +254,7 @@ class NetSource {
         },
       );
 
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       _controller.add(0);
       return NetResponse.fromJson(response.data!);
@@ -260,6 +280,7 @@ class NetSource {
         data: data,
         queryParameters: params,
       );
+      _checkUnauthorized(route, response.statusCode);
       log('Response @ $route: ${response.data}');
       return response.data;
     } catch (e) {

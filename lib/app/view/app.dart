@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/theme.dart';
 import 'package:geepay_pos/auth/auth.dart';
+import 'package:geepay_pos/login/login.dart';
 import 'package:geepay_pos/splash/view/splash_page.dart';
 import 'package:geepay_pos/utils/constants.dart';
 import 'package:geepay_pos/utils/deep_link_service.dart';
@@ -37,10 +38,23 @@ class App extends StatelessWidget {
         child: MaterialApp(
           theme: const AppTheme().themeData,
           scaffoldMessengerKey: scaffoldMessengerKey,
+          navigatorKey: navKey,
           navigatorObservers: [routeObserver],
           builder: (context, child) {
             SizeConfig().init(context);
-            return child!;
+            return BlocListener<AuthBloc, AuthState>(
+              listenWhen: (previous, current) =>
+                  previous.status == AuthStatus.authenticated &&
+                  (current.status == AuthStatus.unauthenticated ||
+                      current.status == AuthStatus.expired),
+              listener: (context, state) {
+                navKey.currentState?.pushAndRemoveUntil(
+                  LoginPage.route(),
+                  (route) => false,
+                );
+              },
+              child: child!,
+            );
           },
           home: SplashPage(deepLinkService: deepLinkService),
         ),
