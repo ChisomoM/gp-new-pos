@@ -1,6 +1,7 @@
 import 'package:auth_repo/auth_repo.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:geepay_pos/models/transaction.dart';
 import 'package:services_repo/services_repo.dart';
 
@@ -21,12 +22,62 @@ class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
     await load();
   }
 
+  /// Applies a quick date preset. Use [setCustomDateRange] for custom ranges.
+  Future<void> setDatePreset(TransactionHistoryDatePreset preset) async {
+    if (preset == state.datePreset &&
+        preset != TransactionHistoryDatePreset.custom) {
+      return;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final range = switch (preset) {
+      TransactionHistoryDatePreset.today => DateTimeRange(
+        start: today,
+        end: today,
+      ),
+      TransactionHistoryDatePreset.yesterday => DateTimeRange(
+        start: DateTime(today.year, today.month, today.day - 1),
+        end: DateTime(today.year, today.month, today.day - 1),
+      ),
+      TransactionHistoryDatePreset.last7Days => DateTimeRange(
+        start: DateTime(today.year, today.month, today.day - 6),
+        end: today,
+      ),
+      _ => null,
+    };
+    emit(state.copyWith(datePreset: preset, dateRange: () => range));
+    await load();
+  }
+
+  Future<void> setCustomDateRange(DateTimeRange range) async {
+    emit(
+      state.copyWith(
+        datePreset: TransactionHistoryDatePreset.custom,
+        dateRange: () => range,
+      ),
+    );
+    await load();
+  }
+
+  Future<void> clearFilters() async {
+    emit(
+      state.copyWith(
+        filter: TransactionHistoryFilter.all,
+        datePreset: TransactionHistoryDatePreset.anyTime,
+        dateRange: () => null,
+      ),
+    );
+    await load();
+  }
+
   Future<void> load() async {
     emit(state.copyWith(status: TransactionHistoryStatus.loading));
     final deviceId = await _authRepo.getDeviceId();
     final result = await _servicesRepo.getTransactions(
       posDeviceId: deviceId,
       status: state.filter.apiValue,
+      startDate: state.dateRange?.start,
+      endDate: state.dateRange?.end,
       pageSize: 50,
     );
     if (isClosed) return;
