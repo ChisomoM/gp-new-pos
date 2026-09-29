@@ -50,27 +50,44 @@ class TransactionHistoryBody extends StatelessWidget {
                 color: AppColors.surfaceWhite,
                 border: Border(bottom: BorderSide(color: AppColors.divider)),
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpace.gutter,
-                  AppSpace.x2,
-                  AppSpace.gutter,
-                  AppSpace.x3,
-                ),
-                child: Row(
-                  children: [
-                    for (final filter in TransactionHistoryFilter.values) ...[
-                      if (filter != TransactionHistoryFilter.values.first)
-                        const SizedBox(width: AppSpace.x2),
-                      AppChoiceChip(
-                        label: _filterLabel(filter),
-                        selected: state.filter == filter,
-                        onTap: () => cubit.setFilter(filter),
-                      ),
+              child: Column(
+                children: [
+                  _ChipRow(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.gutter,
+                      AppSpace.x2,
+                      AppSpace.gutter,
+                      AppSpace.x2,
+                    ),
+                    children: [
+                      for (final filter in TransactionHistoryFilter.values)
+                        AppChoiceChip(
+                          label: _filterLabel(filter),
+                          selected: state.filter == filter,
+                          onTap: () => cubit.setFilter(filter),
+                        ),
                     ],
-                  ],
-                ),
+                  ),
+                  _ChipRow(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.gutter,
+                      0,
+                      AppSpace.gutter,
+                      AppSpace.x3,
+                    ),
+                    children: [
+                      for (final preset in TransactionHistoryDatePreset.values)
+                        AppChoiceChip(
+                          label: _dateLabel(state, preset),
+                          selected: state.datePreset == preset,
+                          onTap: () =>
+                              preset == TransactionHistoryDatePreset.custom
+                              ? _pickRange(context, state)
+                              : cubit.setDatePreset(preset),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Expanded(child: _TransactionList(state: state)),
@@ -87,6 +104,67 @@ String _filterLabel(TransactionHistoryFilter filter) => switch (filter) {
   TransactionHistoryFilter.failed => 'Failed',
   TransactionHistoryFilter.pending => 'Pending',
 };
+
+String _dateLabel(
+  TransactionHistoryState state,
+  TransactionHistoryDatePreset preset,
+) {
+  switch (preset) {
+    case TransactionHistoryDatePreset.anyTime:
+      return 'Any time';
+    case TransactionHistoryDatePreset.today:
+      return 'Today';
+    case TransactionHistoryDatePreset.yesterday:
+      return 'Yesterday';
+    case TransactionHistoryDatePreset.last7Days:
+      return 'Last 7 days';
+    case TransactionHistoryDatePreset.custom:
+      final range = state.dateRange;
+      if (state.datePreset != preset || range == null) return 'Custom range';
+      final fmt = DateFormat('d MMM');
+      return '${fmt.format(range.start)} - ${fmt.format(range.end)}';
+  }
+}
+
+Future<void> _pickRange(
+  BuildContext context,
+  TransactionHistoryState state,
+) async {
+  final cubit = context.read<TransactionHistoryCubit>();
+  final now = DateTime.now();
+  final picked = await showDateRangePicker(
+    context: context,
+    firstDate: DateTime(now.year - 3),
+    lastDate: DateTime(now.year, now.month, now.day),
+    initialDateRange: state.datePreset == TransactionHistoryDatePreset.custom
+        ? state.dateRange
+        : null,
+  );
+  if (picked != null) await cubit.setCustomDateRange(picked);
+}
+
+class _ChipRow extends StatelessWidget {
+  const _ChipRow({required this.padding, required this.children});
+
+  final EdgeInsets padding;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: padding,
+      child: Row(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpace.x2),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 class _TransactionList extends StatelessWidget {
   const _TransactionList({required this.state});
@@ -115,25 +193,24 @@ class _TransactionList extends StatelessWidget {
         ),
       );
     } else if (state.transactions.isEmpty) {
-      final filtered = state.filter != TransactionHistoryFilter.all;
+      final filtered = state.hasActiveFilter;
       child = Center(
-        key: ValueKey('empty-${state.filter}'),
+        key: ValueKey('empty-${state.filter}-${state.dateRange}'),
         child: SingleChildScrollView(
           child: EmptyState(
             icon: AppIcons.receipt,
             title: filtered
-                ? 'No ${_filterLabel(state.filter).toLowerCase()} '
-                      'transactions'
+                ? 'No matching transactions'
                 : 'No transactions yet',
             message: filtered
-                ? 'Try another filter.'
+                ? 'Try another filter or date range.'
                 : 'Collections you take will show up here.',
           ),
         ),
       );
     } else {
       child = ListView.separated(
-        key: ValueKey('list-${state.filter}'),
+        key: ValueKey('list-${state.filter}-${state.dateRange}'),
         padding: const EdgeInsets.all(AppSpace.gutter),
         itemCount: state.transactions.length,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpace.x2),

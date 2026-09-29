@@ -47,28 +47,31 @@ class ServicesRepo {
 
   /// Fetches POS transactions (`GET /transactions/list`) — used by both the
   /// Dashboard's "Today's collections" summary (pass [todayOnly]: true) and
-  /// the Transaction History screen (pass a [status] filter, no date
-  /// range).
+  /// the Transaction History screen (pass a [status] filter and an optional
+  /// [startDate]/[endDate] range, both inclusive).
   Future<OpStatus> getTransactions({
     String? posDeviceId,
     String? status,
     bool todayOnly = false,
+    DateTime? startDate,
+    DateTime? endDate,
     int page = 1,
     int pageSize = 100,
   }) async {
     try {
-      final today = DateTime.now();
-      final dateStr = '${today.year.toString().padLeft(4, '0')}-'
-          '${today.month.toString().padLeft(2, '0')}-'
-          '${today.day.toString().padLeft(2, '0')}';
+      String fmt(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+      final start = todayOnly ? DateTime.now() : startDate;
+      final end = todayOnly ? DateTime.now() : endDate;
       final response = await _net.get('transactions/list', null, {
         'page': page,
         'page_size': pageSize,
         'is_from_pos': true,
         if (posDeviceId != null) 'pos_device_id': posDeviceId,
         if (status != null) 'status': status,
-        if (todayOnly) 'start_date': dateStr,
-        if (todayOnly) 'end_date': dateStr,
+        if (start != null) 'start_date': fmt(start),
+        if (end != null) 'end_date': fmt(end),
       });
       return OpStatus.fromResponse(response);
     } catch (e) {
