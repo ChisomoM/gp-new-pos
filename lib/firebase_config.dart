@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:geepay_pos/firebase_options.dart';
 
@@ -41,8 +40,8 @@ class FirebaseConfig {
 
   /// Get Firebase options for the environment.
   static FirebaseOptions _getOptionsForEnvironment(String environment) {
-    // For now, use default. In a real template, you'd have different options per env.
-    // You can extend this to load from different files or configs.
+    // For now, use default. In a real template, you'd have different options
+    //per env. You can extend this to load from different files or configs.
     return DefaultFirebaseOptions.currentPlatform;
   }
 

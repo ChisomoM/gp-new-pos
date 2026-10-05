@@ -54,6 +54,7 @@ void main() {
       prefs: prefs,
       db: db,
       net: net,
+      kioskExitPin: config.kioskExitPin,
     );
     final servicesRepo = ServicesRepo(
       prefs: prefs,

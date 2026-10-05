@@ -98,8 +98,8 @@ abstract final class TransactionExport {
     required String title,
     required SummaryExportData summary,
   }) async {
-    final doc = pw.Document();
-    doc.addPage(
+    final doc = pw.Document()
+    ..addPage(
       pw.Page(
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -132,8 +132,8 @@ abstract final class TransactionExport {
     required SummaryExportData summary,
   }) async {
     final workbook = xls.Excel.createExcel();
-    final sheet = workbook['Sheet1'];
-    sheet.appendRow([xls.TextCellValue('Metric'), xls.TextCellValue('Value')]);
+    final sheet = workbook['Sheet1']
+    ..appendRow([xls.TextCellValue('Metric'), xls.TextCellValue('Value')]);
     for (final row in summary.rows) {
       sheet.appendRow([for (final cell in row) xls.TextCellValue(cell)]);
     }

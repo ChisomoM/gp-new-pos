@@ -56,7 +56,7 @@ class ServicesRepo {
     DateTime? startDate,
     DateTime? endDate,
     int page = 1,
-    int pageSize = 100,
+    int pageSize = 1000,
   }) async {
     try {
       String fmt(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
@@ -64,7 +64,7 @@ class ServicesRepo {
           '${d.day.toString().padLeft(2, '0')}';
       final start = todayOnly ? DateTime.now() : startDate;
       final end = todayOnly ? DateTime.now() : endDate;
-      final response = await _net.get('transactions/list', null, {
+      final params = {
         'page': page,
         'page_size': pageSize,
         'is_from_pos': true,
@@ -72,7 +72,9 @@ class ServicesRepo {
         if (status != null) 'status': status,
         if (start != null) 'start_date': fmt(start),
         if (end != null) 'end_date': fmt(end),
-      });
+      };
+      log('GET request @ transactions/list: $params');
+      final response = await _net.get('transactions/list', null, params);
       return OpStatus.fromResponse(response);
     } catch (e) {
       return OpStatus.unexpected(e.toString());
@@ -138,6 +140,53 @@ class ServicesRepo {
       final response = await _net.get(
         'mobile-money/check-status/$transactionRef',
       );
+      return OpStatus.fromResponse(response);
+    } catch (e) {
+      return OpStatus.unexpected(e.toString());
+    }
+  }
+
+  /// Creates a hosted-checkout payment link (`POST /api/payment-links/create`,
+  /// session-token route) — the merchant's own login token is enough, no
+  /// merchant API key/secret involved. [transactionRef] is sent as the
+  /// `X-Transaction-Ref` header; calling again with the same ref/amount
+  /// returns the existing session instead of creating a duplicate, so it's
+  /// safe to retry on a flaky connection. The response has no QR image —
+  /// [checkout_url] in the returned data is a page URL, the caller renders
+  /// the QR locally from that string.
+  Future<OpStatus> createPaymentLink({
+    required double amount,
+    required String transactionRef,
+    int expiresInMinutes = 60,
+    String? branchId,
+    String? posDeviceId,
+    String? userId,
+  }) async {
+    try {
+      final response = await _net.post(
+        'payment-links/create',
+        {
+          'amount': amount,
+          'expires_in_minutes': expiresInMinutes,
+          if (branchId != null) 'branch_id': branchId,
+          if (posDeviceId != null) 'pos_device_id': posDeviceId,
+          if (userId != null) 'user_id': userId,
+        },
+        {'X-Transaction-Ref': transactionRef},
+      );
+      return OpStatus.fromResponse(response);
+    } catch (e) {
+      return OpStatus.unexpected(e.toString());
+    }
+  }
+
+  /// Polls a hosted checkout session's status
+  /// (`GET /api/hosted-checkout/sessions/:token`). Public route — the
+  /// [token] from [createPaymentLink] is itself the credential, no bearer
+  /// token required, same as the customer-facing checkout page.
+  Future<OpStatus> checkPaymentLinkStatus(String token) async {
+    try {
+      final response = await _net.get('hosted-checkout/sessions/$token');
       return OpStatus.fromResponse(response);
     } catch (e) {
       return OpStatus.unexpected(e.toString());

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:auth_repo/auth_repo.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -9,7 +11,11 @@ part 'transaction_history_state.dart';
 
 class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
   TransactionHistoryCubit(this._servicesRepo, this._authRepo)
-    : super(const TransactionHistoryState()) {
+    : super(
+        TransactionHistoryState(
+          dateRange: _rangeFor(TransactionHistoryDatePreset.today),
+        ),
+      ) {
     load();
   }
 
@@ -23,14 +29,23 @@ class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
   }
 
   /// Applies a quick date preset. Use [setCustomDateRange] for custom ranges.
+  /// There is no "any time" preset — every preset resolves to a concrete
+  /// day range, defaulting to today.
   Future<void> setDatePreset(TransactionHistoryDatePreset preset) async {
     if (preset == state.datePreset &&
         preset != TransactionHistoryDatePreset.custom) {
       return;
     }
+    emit(
+      state.copyWith(datePreset: preset, dateRange: () => _rangeFor(preset)),
+    );
+    await load();
+  }
+
+  static DateTimeRange? _rangeFor(TransactionHistoryDatePreset preset) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final range = switch (preset) {
+    return switch (preset) {
       TransactionHistoryDatePreset.today => DateTimeRange(
         start: today,
         end: today,
@@ -43,10 +58,8 @@ class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
         start: DateTime(today.year, today.month, today.day - 6),
         end: today,
       ),
-      _ => null,
+      TransactionHistoryDatePreset.custom => null,
     };
-    emit(state.copyWith(datePreset: preset, dateRange: () => range));
-    await load();
   }
 
   Future<void> setCustomDateRange(DateTimeRange range) async {
@@ -63,8 +76,8 @@ class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
     emit(
       state.copyWith(
         filter: TransactionHistoryFilter.all,
-        datePreset: TransactionHistoryDatePreset.anyTime,
-        dateRange: () => null,
+        datePreset: TransactionHistoryDatePreset.today,
+        dateRange: () => _rangeFor(TransactionHistoryDatePreset.today),
       ),
     );
     await load();
@@ -78,8 +91,9 @@ class TransactionHistoryCubit extends Cubit<TransactionHistoryState> {
       status: state.filter.apiValue,
       startDate: state.dateRange?.start,
       endDate: state.dateRange?.end,
-      pageSize: 50,
+      pageSize: 1000,
     );
+    // log('Loaded transactions: ${result.data}');
     if (isClosed) return;
     if (result.success) {
       final parsed = TransactionList.fromResponseData(result.data);

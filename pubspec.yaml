@@ -41,6 +41,7 @@ dependencies:
   permission_client:
     path: packages/permission_client
   print_bluetooth_thermal: ^1.2.2
+  qr_flutter: ^4.1.0
   services_repo:
     path: packages/services_repo
   shimmer: ^3.0.0
@@ -52,6 +53,8 @@ dependencies:
   excel: ^4.0.6
   path_provider: ^2.1.6
   share_plus: ^13.3.0
+  equatable: ^2.1.0
+  package_info_plus: ^10.2.1
 
 dev_dependencies:
   bloc_test: ^10.0.0

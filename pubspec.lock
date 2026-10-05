@@ -288,7 +288,7 @@ packages:
     source: hosted
     version: "2.2.2"
   equatable:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: equatable
       sha256: "3bce007a596ff8b3119c45d68aaef631272537c03d30e5d4534dd24bf4c5eaa2"
@@ -843,7 +843,7 @@ packages:
     source: hosted
     version: "2.2.0"
   package_info_plus:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: package_info_plus
       sha256: "127e1751e37ffb2ff4658beeaca77bad0c27bf5f932bd3a501c2296926d4b481"
@@ -1057,6 +1057,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  qr_flutter:
+    dependency: "direct main"
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   record_use:
     dependency: transitive
     description:

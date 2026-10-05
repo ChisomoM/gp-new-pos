@@ -64,6 +64,10 @@ abstract final class AppIcons {
   static const IconData security = Iconsax.shield_tick_copy;
   static const IconData notification = Iconsax.notification_copy;
   static const IconData comingSoon = Iconsax.timer_1_copy;
+
+  // Payment Link
+  static const IconData qrCode = Iconsax.scan_barcode_copy;
+  static const IconData link = Iconsax.link_copy;
 }
 
 /// Icon sizes (plan §2.6).

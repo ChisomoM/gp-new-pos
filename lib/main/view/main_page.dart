@@ -41,9 +41,7 @@ class _MainPageState extends State<MainPage> {
     // Example: app://profile -> navigate to profile
     if (link.startsWith('app://profile')) {
       // Navigate to profile screen (for now, just print)
-      print('Navigate to profile');
     } else if (link.startsWith('app://settings')) {
-      print('Navigate to settings');
     }
     // Add more routes as needed
   }

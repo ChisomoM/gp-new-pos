@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:auth_repo/src/models/models.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fire_auth;

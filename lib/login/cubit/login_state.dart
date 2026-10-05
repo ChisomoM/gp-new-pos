@@ -3,8 +3,7 @@ part of 'login_cubit.dart';
 enum LoginStatus {
   initial,
   submitting,
-  otpRequired,
-  otpSubmitting,
+  needsBranchSelection,
   success,
   failure,
 }
@@ -15,9 +14,8 @@ class LoginState extends Equatable {
     this.errorMessage,
     this.emailError,
     this.passwordError,
-    this.otpError,
-    this.email = '',
-    this.password = '',
+    this.deviceId,
+    this.branches = const [],
   });
 
   final LoginStatus status;
@@ -28,24 +26,24 @@ class LoginState extends Equatable {
   /// Field-level validation errors, shown under the matching field.
   final String? emailError;
   final String? passwordError;
-  final String? otpError;
+
+  /// The `gp_pos_tms` device id, set once login succeeds and this device
+  /// needs branch resolution (`LoginStatus.needsBranchSelection`) — the
+  /// branch picker needs it for `AuthRepo.claimPosDevice`.
+  final String? deviceId;
+
+  /// `GET /merchants/branches` result, as `(id, name)` — only populated
+  /// when [status] is `needsBranchSelection`.
+  final List<(String id, String name)> branches;
 
   bool get hasErrors =>
       (errorMessage?.isNotEmpty ?? false) ||
       emailError != null ||
-      passwordError != null ||
-      otpError != null;
+      passwordError != null;
 
-  /// Held in memory (never persisted) between the two `/auth/login` calls —
-  /// the OTP-gated flow re-sends email+password alongside the code on the
-  /// second call, per `pos_mobile_app_endpoints.md` §0.
-  final String email;
-  final String password;
-
-  bool get isSubmitting => status == LoginStatus.submitting;
-  bool get isOtpSubmitting => status == LoginStatus.otpSubmitting;
-  bool get isAwaitingOtp =>
-      status == LoginStatus.otpRequired || status == LoginStatus.otpSubmitting;
+  bool get isSubmitting =>
+      status == LoginStatus.submitting ||
+      status == LoginStatus.needsBranchSelection;
 
   /// Errors are not carried over: every emission shows only the errors
   /// passed to it.
@@ -54,18 +52,16 @@ class LoginState extends Equatable {
     String? errorMessage,
     String? emailError,
     String? passwordError,
-    String? otpError,
-    String? email,
-    String? password,
+    String? deviceId,
+    List<(String id, String name)>? branches,
   }) {
     return LoginState(
       status: status ?? this.status,
       errorMessage: errorMessage,
       emailError: emailError,
       passwordError: passwordError,
-      otpError: otpError,
-      email: email ?? this.email,
-      password: password ?? this.password,
+      deviceId: deviceId ?? this.deviceId,
+      branches: branches ?? this.branches,
     );
   }
 
@@ -75,8 +71,7 @@ class LoginState extends Equatable {
     errorMessage,
     emailError,
     passwordError,
-    otpError,
-    email,
-    password,
+    deviceId,
+    branches,
   ];
 }

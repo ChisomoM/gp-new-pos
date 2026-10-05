@@ -11,23 +11,53 @@ class SetupBody extends StatefulWidget {
 }
 
 class _SetupBodyState extends State<SetupBody> {
-  final _businessName = TextEditingController();
-  final _businessEmail = TextEditingController();
-  final _businessPhone = TextEditingController();
+  final _name = TextEditingController();
+  final _serialNumber = TextEditingController();
+  final _phone = TextEditingController();
 
   @override
   void dispose() {
-    _businessName.dispose();
-    _businessEmail.dispose();
-    _businessPhone.dispose();
+    _name.dispose();
+    _serialNumber.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
   void _submit(SetupCubit cubit) {
     cubit.submit(
-      businessName: _businessName.text,
-      businessEmail: _businessEmail.text,
-      businessPhone: _businessPhone.text,
+      name: _name.text,
+      serialNumber: _serialNumber.text,
+      phoneNumber: _phone.text,
+    );
+  }
+
+  Future<void> _pickTerminalType(BuildContext context, SetupState state) {
+    return showAppSheet<void>(
+      context,
+      title: 'Terminal type',
+      child: ListGroup(
+        children: [
+          for (final type in state.terminalTypes)
+            AppListTile(
+              title: type.$2,
+              leading: Icon(
+                type.$1 == state.selectedTerminalTypeId
+                    ? AppIcons.successFilled
+                    : null,
+                size: AppIconSize.md,
+                color: AppColors.gpCobalt,
+              ),
+              showChevron: false,
+              onTap: () {
+                context.read<SetupCubit>().selectTerminalType(
+                  type.$1,
+                  type.$2,
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -70,8 +100,8 @@ class _SetupBodyState extends State<SetupBody> {
                       ),
                       const SizedBox(height: AppSpace.x1),
                       Text(
-                        "Register this terminal to your business so it's "
-                        'ready to accept payments.',
+                        'Register this terminal so it can be assigned to '
+                        'your business at login.',
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.onBrandMid,
                         ),
@@ -93,29 +123,34 @@ class _SetupBodyState extends State<SetupBody> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppTextField(
-                      label: 'Business name',
-                      controller: _businessName,
-                      hintText: 'e.g. Kashikite Traders',
+                      label: 'Device name',
+                      controller: _name,
+                      hintText: 'e.g. Front counter terminal',
                       textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.organizationName],
                       errorText: state.nameError,
                       onChanged: (_) =>
                           context.read<SetupCubit>().nameChanged(),
                     ),
                     const SizedBox(height: AppSpace.field),
                     AppTextField(
-                      label: 'Business email',
-                      controller: _businessEmail,
-                      hintText: 'you@business.com',
-                      keyboardType: TextInputType.emailAddress,
+                      label: 'Serial number',
+                      controller: _serialNumber,
+                      hintText: 'Printed on the device',
                       textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.email],
-                      helperText: 'Optional',
+                      errorText: state.serialNumberError,
+                      onChanged: (_) =>
+                          context.read<SetupCubit>().serialNumberChanged(),
+                    ),
+                    const SizedBox(height: AppSpace.field),
+                    _TerminalTypeField(
+                      value: state.selectedTerminalTypeName,
+                      enabled: state.terminalTypes.isNotEmpty,
+                      onTap: () => _pickTerminalType(context, state),
                     ),
                     const SizedBox(height: AppSpace.field),
                     AppTextField(
-                      label: 'Business phone',
-                      controller: _businessPhone,
+                      label: 'Phone number',
+                      controller: _phone,
                       hintText: '0973 042 237',
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.done,
@@ -133,7 +168,7 @@ class _SetupBodyState extends State<SetupBody> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Device ID',
+                                  'Device fingerprint',
                                   style: AppTextStyles.bodyStrong,
                                 ),
                                 AnimatedSwitcher(
@@ -183,9 +218,7 @@ class _SetupBodyState extends State<SetupBody> {
             DecoratedBox(
               decoration: const BoxDecoration(
                 color: AppColors.surfaceWhite,
-                border: Border(
-                  top: BorderSide(color: AppColors.divider),
-                ),
+                border: Border(top: BorderSide(color: AppColors.divider)),
               ),
               child: SafeArea(
                 top: false,
@@ -209,6 +242,71 @@ class _SetupBodyState extends State<SetupBody> {
           ],
         );
       },
+    );
+  }
+}
+
+class _TerminalTypeField extends StatelessWidget {
+  const _TerminalTypeField({
+    required this.value,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String? value;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Terminal type', style: AppTextStyles.label),
+            const SizedBox(width: AppSpace.x1),
+            Text(
+              'Optional',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.label),
+        Pressable(
+          onTap: enabled ? onTap : null,
+          border: Border.all(color: AppColors.borderMedium, width: 1.5),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.x4,
+              vertical: AppSpace.x4,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value ??
+                        (enabled ? 'Select a terminal type' : 'None available'),
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: value == null
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  AppIcons.chevronDown,
+                  size: AppIconSize.sm,
+                  color: AppColors.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

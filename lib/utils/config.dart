@@ -13,6 +13,7 @@ class Config {
     required this.dbName,
     required this.host,
     required this.initScript,
+    required this.kioskExitPin,
     this.environment = AppEnv.development,
     this.migrations = const [],
     this.uuid,
@@ -26,6 +27,7 @@ class Config {
     dbName: 'geepay.pos.dev.db',
     initScript: initialScript,
     migrations: migrationScript,
+    kioskExitPin: '0000',
   );
 
   /// Creates a staging config
@@ -37,6 +39,7 @@ class Config {
     dbName: 'geepay.pos.stg.db',
     initScript: initialScript,
     migrations: migrationScript,
+    kioskExitPin: '0000',
   );
 
   /// Creates a production config
@@ -48,6 +51,7 @@ class Config {
     dbName: 'geepay.pos.db',
     initScript: initialScript,
     migrations: migrationScript,
+    kioskExitPin: '0000',
   );
 
   /// A description for baseUrl
@@ -73,4 +77,8 @@ class Config {
 
   /// A description for environment
   final AppEnv environment;
+
+  /// Admin PIN required to exit kiosk mode on this build flavor, entered via
+  /// the hidden gesture on the Settings screen's app-version row.
+  final String kioskExitPin;
 }

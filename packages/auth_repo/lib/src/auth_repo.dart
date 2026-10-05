@@ -49,6 +49,7 @@ class AuthRepo {
     required SharedPrefs prefs,
     required LocalData db,
     required NetSource net,
+    required this.kioskExitPin,
   })  : _prefs = prefs,
         _db = db,
         _net = net,
@@ -69,8 +70,14 @@ class AuthRepo {
   final LocalData _db;
   final NetSource _net;
   final bool _isDev;
+
+  /// Admin PIN required to exit kiosk mode on this build flavor (see
+  /// `Config.kioskExitPin`), checked by the hidden gesture on the Settings
+  /// screen's app-version row.
+  final String kioskExitPin;
   final fire_auth.FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  // ignore: unused_field
   final SignInWithApple _signInWithApple;
 
   late final AuthCore _authCore;
@@ -100,6 +107,35 @@ class AuthRepo {
 
   /// Whether this device has already completed registration.
   Future<bool> isDeviceRegistered() => _authCore.isDeviceRegistered();
+
+  /// The `gp_pos_tms` device id from registration, or null if unregistered.
+  Future<String?> getPosDeviceId() => _authCore.getPosDeviceId();
+
+  /// Persists whether this device should be kiosk-locked.
+  Future<void> setKioskModeEnabled({required bool enabled}) =>
+      _authCore.setKioskModeEnabled(enabled: enabled);
+
+  /// Whether this device should be kiosk-locked on launch.
+  Future<bool> isKioskModeEnabled() => _authCore.isKioskModeEnabled();
+
+  /// Terminal Type catalog for the Setup screen's picker, as `(id, name)`.
+  Future<List<(String id, String name)>> getTerminalTypes() =>
+      _authCore.getTerminalTypes();
+
+  /// Reads this device's `(merchantId, branchId)` assignment.
+  Future<(String?, String?)> getPosDevice(String deviceId) =>
+      _authCore.getPosDevice(deviceId);
+
+  /// Claims an unassigned device to the logged-in merchant, optionally
+  /// writing the chosen branch at the same time.
+  Future<OpStatus> claimPosDevice(String deviceId, {String? branchId}) =>
+      _authCore.claimPosDevice(deviceId, branchId: branchId);
+
+  /// Lists the logged-in merchant's branches for the post-login branch
+  /// picker, as `(id, name)`. Empty means either "no branches" or "couldn't
+  /// load" — both are treated the same by callers (skip the picker).
+  Future<List<(String id, String name)>> getBranches() =>
+      _authCore.getBranches();
 
   /// Logs in the user with a Google account.
   Future<OpStatus> continueWithGoogle([String type = 'login']) =>

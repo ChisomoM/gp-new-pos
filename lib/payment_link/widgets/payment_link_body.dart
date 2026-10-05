@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
-import 'package:geepay_pos/collections/cubit/cubit.dart';
-import 'package:geepay_pos/payment_link/payment_link.dart';
+import 'package:geepay_pos/payment_link/cubit/cubit.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 
-class CollectionsBody extends StatefulWidget {
-  const CollectionsBody({super.key});
+class PaymentLinkBody extends StatefulWidget {
+  const PaymentLinkBody({super.key});
 
   @override
-  State<CollectionsBody> createState() => _CollectionsBodyState();
+  State<PaymentLinkBody> createState() => _PaymentLinkBodyState();
 }
 
-class _CollectionsBodyState extends State<CollectionsBody> {
+class _PaymentLinkBodyState extends State<PaymentLinkBody> {
   static const _amounts = [20, 50, 100, 200];
 
   final _amountController = TextEditingController();
@@ -24,12 +23,12 @@ class _CollectionsBodyState extends State<CollectionsBody> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CollectionsCubit, CollectionsState>(
+    return BlocBuilder<PaymentLinkCubit, PaymentLinkState>(
       builder: (context, state) {
-        final cubit = context.read<CollectionsCubit>();
+        final cubit = context.read<PaymentLinkCubit>();
         return Column(
           children: [
-            const AppHeader(title: 'New collection'),
+            const AppHeader(title: 'Payment link'),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -41,13 +40,12 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppTextField(
-                      label: 'Customer phone number',
-                      hintText: 'e.g. 0973 042 237',
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: AppIcons.phone,
-                      onChanged: cubit.setPhoneNumber,
+                    Text(
+                      'Generate a QR code the customer scans to pay on '
+                      'their own phone.',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                     const SizedBox(height: AppSpace.section),
                     AppTextField(
@@ -109,7 +107,7 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "YOU'RE REQUESTING",
+                            'LINK AMOUNT',
                             style: AppTextStyles.overline.copyWith(
                               color: AppColors.gpCobalt,
                             ),
@@ -124,7 +122,7 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                           ),
                           const SizedBox(height: AppSpace.x1),
                           Text(
-                            'Sent as a mobile money request',
+                            'Valid for 60 minutes once created',
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.unselectedText,
                             ),
@@ -170,21 +168,12 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                   child: Column(
                     children: [
                       AppButton(
-                        label: 'Request payment',
-                        icon: AppIcons.receive,
+                        label: 'Generate QR code',
+                        icon: AppIcons.qrCode,
                         isLoading: state.isSubmitting,
                         onPressed: state.isSubmitting ? null : cubit.submit,
                       ),
-                      const SizedBox(height: AppSpace.x2),
-                      AppButton.tertiary(
-                        label: 'Or generate a payment link / QR code',
-                        icon: AppIcons.qrCode,
-                        expand: true,
-                        onPressed: () => Navigator.of(
-                          context,
-                        ).push(PaymentLinkPage.route()),
-                      ),
-                      const SizedBox(height: AppSpace.x1),
+                      const SizedBox(height: AppSpace.x3),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

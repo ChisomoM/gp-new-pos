@@ -20,13 +20,11 @@ class LoginBody extends StatefulWidget {
 class _LoginBodyState extends State<LoginBody> {
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _otp = TextEditingController();
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
-    _otp.dispose();
     super.dispose();
   }
 
@@ -35,16 +33,12 @@ class _LoginBodyState extends State<LoginBody> {
     unawaited(cubit.submit(email: _email.text, password: _password.text));
   }
 
-  void _submitOtp(LoginCubit cubit) {
-    unawaited(cubit.submitOtp(_otp.text));
-  }
-
   Widget _loginStep(BuildContext context, LoginState state) {
     final cubit = context.read<LoginCubit>();
     return AutofillGroup(
       child: Column(
-        key: const ValueKey('login'),
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text('Welcome back', style: AppTextStyles.title1),
           const SizedBox(height: AppSpace.x1),
@@ -89,78 +83,6 @@ class _LoginBodyState extends State<LoginBody> {
       ),
     );
   }
-
-  Widget _otpStep(BuildContext context, LoginState state) {
-    final cubit = context.read<LoginCubit>();
-    return Column(
-      key: const ValueKey('otp'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Verify it's you", style: AppTextStyles.title1),
-        const SizedBox(height: AppSpace.x1),
-        Text.rich(
-          TextSpan(
-            text: 'Enter the 6-digit code we emailed to ',
-            children: [
-              TextSpan(
-                text: state.email,
-                style: AppTextStyles.bodyStrong.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          style: AppTextStyles.body.copyWith(color: AppColors.textTertiary),
-        ),
-        const SizedBox(height: AppSpace.x6),
-        AppTextField(
-          label: 'Verification code',
-          controller: _otp,
-          hintText: '000000',
-          keyboardType: TextInputType.number,
-          fillColor: AppColors.surfacePage,
-          textInputAction: TextInputAction.done,
-          autofillHints: const [AutofillHints.oneTimeCode],
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(6),
-          ],
-          textStyle: _otpStyle(AppColors.textPrimary),
-          hintStyle: _otpStyle(AppColors.textMuted),
-          autofocus: true,
-          enabled: !state.isOtpSubmitting,
-          errorText: state.otpError,
-          onChanged: (_) => cubit.fieldChanged(),
-          onSubmitted: (_) => _submitOtp(cubit),
-        ),
-        AnimatedAlert(message: state.errorMessage),
-        const SizedBox(height: AppSpace.x6),
-        AppButton(
-          label: 'Verify',
-          isLoading: state.isOtpSubmitting,
-          onPressed: () => _submitOtp(cubit),
-        ),
-        const SizedBox(height: AppSpace.x3),
-        Center(
-          child: AppButton.tertiary(
-            label: 'Back to login',
-            onPressed: state.isOtpSubmitting
-                ? null
-                : () {
-                    _otp.clear();
-                    cubit.cancelOtp();
-                  },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Spaced tabular digits so the code reads as six separate characters.
-  static TextStyle _otpStyle(Color color) => AppTextStyles.gpNum(
-    fontSize: AppTextStyles.numMd,
-    color: color,
-  ).copyWith(letterSpacing: AppSpace.x2);
 
   @override
   Widget build(BuildContext context) {
@@ -244,29 +166,7 @@ class _LoginBodyState extends State<LoginBody> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          AnimatedSwitcher(
-                            duration: AppMotion.of(context, AppMotion.slow),
-                            switchInCurve: AppMotion.enter,
-                            switchOutCurve: AppMotion.exit,
-                            layoutBuilder: (current, previous) => Stack(
-                              alignment: Alignment.topLeft,
-                              children: [...previous, ?current],
-                            ),
-                            transitionBuilder: (child, animation) =>
-                                FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                    position: Tween(
-                                      begin: const Offset(0.04, 0),
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  ),
-                                ),
-                            child: state.isAwaitingOtp
-                                ? _otpStep(context, state)
-                                : _loginStep(context, state),
-                          ),
+                          _loginStep(context, state),
                           const SizedBox(height: AppSpace.x6),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,

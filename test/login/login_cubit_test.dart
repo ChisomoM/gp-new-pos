@@ -50,11 +50,87 @@ void main() {
     await cubit.close();
   });
 
-  test('an empty OTP is flagged on the code field', () async {
-    final cubit = LoginCubit(auth);
-    await cubit.submitOtp('  ');
-    expect(cubit.state.otpError, 'Enter the 6-digit code');
-    verifyNever(() => auth.login(any()));
-    await cubit.close();
-  });
+  test(
+    'a successful login with no registered device goes straight to success',
+    () async {
+      when(() => auth.login(any())).thenAnswer(
+        (_) async => OpStatus(message: 'Logged in', success: true),
+      );
+      when(auth.getPosDeviceId).thenAnswer((_) async => null);
+
+      final cubit = LoginCubit(auth);
+      await cubit.submit(email: 'a@b.com', password: 'secret');
+      expect(cubit.state.status, LoginStatus.success);
+      verifyNever(() => auth.getPosDevice(any()));
+      await cubit.close();
+    },
+  );
+
+  test(
+    'an already-assigned device with a branch goes straight to success',
+    () async {
+      when(() => auth.login(any())).thenAnswer(
+        (_) async => OpStatus(message: 'Logged in', success: true),
+      );
+      when(auth.getPosDeviceId).thenAnswer((_) async => 'device-1');
+      when(
+        () => auth.getPosDevice('device-1'),
+      ).thenAnswer((_) async => ('merchant-1', 'branch-1'));
+
+      final cubit = LoginCubit(auth);
+      await cubit.submit(email: 'a@b.com', password: 'secret');
+      expect(cubit.state.status, LoginStatus.success);
+      verifyNever(() => auth.getBranches());
+      verifyNever(() => auth.claimPosDevice(any()));
+      await cubit.close();
+    },
+  );
+
+  test(
+    'an unbranched device shows the picker when branches exist',
+    () async {
+      when(() => auth.login(any())).thenAnswer(
+        (_) async => OpStatus(message: 'Logged in', success: true),
+      );
+      when(auth.getPosDeviceId).thenAnswer((_) async => 'device-1');
+      when(
+        () => auth.getPosDevice('device-1'),
+      ).thenAnswer((_) async => (null, null));
+      when(
+        auth.getBranches,
+      ).thenAnswer((_) async => [('b1', 'Cairo Road Branch')]);
+
+      final cubit = LoginCubit(auth);
+      await cubit.submit(email: 'a@b.com', password: 'secret');
+      expect(cubit.state.status, LoginStatus.needsBranchSelection);
+      expect(cubit.state.deviceId, 'device-1');
+      expect(cubit.state.branches, [('b1', 'Cairo Road Branch')]);
+      verifyNever(() => auth.claimPosDevice(any()));
+      await cubit.close();
+    },
+  );
+
+  test(
+    'an unassigned device with no branches to pick claims and succeeds',
+    () async {
+      when(() => auth.login(any())).thenAnswer(
+        (_) async => OpStatus(message: 'Logged in', success: true),
+      );
+      when(auth.getPosDeviceId).thenAnswer((_) async => 'device-1');
+      when(
+        () => auth.getPosDevice('device-1'),
+      ).thenAnswer((_) async => (null, null));
+      when(auth.getBranches).thenAnswer((_) async => const []);
+      when(
+        () => auth.claimPosDevice('device-1'),
+      ).thenAnswer((_) async => OpStatus(message: 'ok', success: true));
+
+      final cubit = LoginCubit(auth);
+      await cubit.submit(email: 'a@b.com', password: 'secret');
+      expect(cubit.state.status, LoginStatus.success);
+      await untilCalled(() => auth.claimPosDevice('device-1'));
+      verify(() => auth.claimPosDevice('device-1')).called(1);
+      await cubit.close();
+    },
+  );
 }

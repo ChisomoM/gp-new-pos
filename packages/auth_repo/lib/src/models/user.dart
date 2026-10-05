@@ -36,6 +36,7 @@ class User extends Equatable {
       final s = v.toString().trim();
       return s.isEmpty ? null : s;
     }
+
     final firstName = asString(json['first_name'] ?? json['firstName']);
     final lastName = asString(json['last_name'] ?? json['lastName']);
     final combinedName = [
@@ -51,16 +52,13 @@ class User extends Equatable {
       id: asString(json['id']) ?? '',
       avatar: asString(json['avatar']) ?? '',
       name: name,
-      accountType: asString(json['account_type'] ?? json['accountType']) ??
-          '',
+      accountType: asString(json['account_type'] ?? json['accountType']) ?? '',
       email: asString(json['email']) ?? '',
       phone: asString(json['phone'] ?? json['phone_number']) ?? '',
       isGmailIdUser:
-          (json['is_gmail_id_user'] ?? json['isGmailIdUser']) as bool? ??
-              false,
+          (json['is_gmail_id_user'] ?? json['isGmailIdUser']) as bool? ?? false,
       isAppleIdUser:
-          (json['is_apple_id_user'] ?? json['isAppleIdUser']) as bool? ??
-              false,
+          (json['is_apple_id_user'] ?? json['isAppleIdUser']) as bool? ?? false,
       createdAt: DateTime.tryParse(
         asString(json['created_at'] ?? json['createdAt']) ?? '',
       ),

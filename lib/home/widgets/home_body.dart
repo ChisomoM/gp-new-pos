@@ -5,6 +5,7 @@ import 'package:geepay_pos/cashier_summary/cashier_summary.dart';
 import 'package:geepay_pos/collections/collections.dart';
 import 'package:geepay_pos/home/cubit/cubit.dart';
 import 'package:geepay_pos/models/transaction.dart';
+import 'package:geepay_pos/payment_link/payment_link.dart';
 import 'package:geepay_pos/transaction_details/transaction_details.dart';
 import 'package:geepay_pos/transaction_history/transaction_history.dart';
 import 'package:geepay_pos/utils/screen_size.dart';
@@ -59,6 +60,13 @@ class HomeBody extends StatelessWidget {
                               onTap: () => Navigator.of(
                                 context,
                               ).push(CollectionsPage.route()),
+                            ),
+                            GroupedToolbarItem(
+                              icon: AppIcons.qrCode,
+                              label: 'Payment link',
+                              onTap: () => Navigator.of(
+                                context,
+                              ).push(PaymentLinkPage.route()),
                             ),
                             GroupedToolbarItem(
                               icon: AppIcons.summary,

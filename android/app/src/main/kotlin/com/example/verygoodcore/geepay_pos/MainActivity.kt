@@ -30,9 +30,11 @@ class MainActivity : FlutterActivity() {
     }
 
     private val printChannel = "geepay_pos/print"
+    private val kioskChannel = "geepay_pos/kiosk"
 
     private var printerDevice: PrinterDevice? = null
     private val printerHelper = PrinterHelper(this)
+    private val kioskHelper = KioskHelper()
 
     /**
      * Maps a Trendit `OnPrintTaskListener#onPrintResult` status code (see
@@ -71,6 +73,28 @@ class MainActivity : FlutterActivity() {
         }
 
         setupPrintChannel(flutterEngine)
+        setupKioskChannel(flutterEngine)
+    }
+
+    private fun setupKioskChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, kioskChannel)
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "enterKiosk" -> {
+                            kioskHelper.enterKiosk(this)
+                            result.success(null)
+                        }
+                        "exitKiosk" -> {
+                            kioskHelper.exitKiosk(this)
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                } catch (e: Throwable) {
+                    result.error("KIOSK_FAILED", e.message, null)
+                }
+            }
     }
 
     private fun setupPrintChannel(flutterEngine: FlutterEngine) {

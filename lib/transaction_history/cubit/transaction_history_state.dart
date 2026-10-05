@@ -4,13 +4,7 @@ enum TransactionHistoryStatus { initial, loading, success, failure }
 
 enum TransactionHistoryFilter { all, successful, failed, pending }
 
-enum TransactionHistoryDatePreset {
-  anyTime,
-  today,
-  yesterday,
-  last7Days,
-  custom,
-}
+enum TransactionHistoryDatePreset { today, yesterday, last7Days, custom }
 
 extension on TransactionHistoryFilter {
   String? get apiValue => switch (this) {
@@ -25,7 +19,7 @@ class TransactionHistoryState extends Equatable {
   const TransactionHistoryState({
     this.status = TransactionHistoryStatus.initial,
     this.filter = TransactionHistoryFilter.all,
-    this.datePreset = TransactionHistoryDatePreset.anyTime,
+    this.datePreset = TransactionHistoryDatePreset.today,
     this.dateRange,
     this.transactions = const [],
     this.errorMessage,
@@ -35,13 +29,15 @@ class TransactionHistoryState extends Equatable {
   final TransactionHistoryFilter filter;
   final TransactionHistoryDatePreset datePreset;
 
-  /// Inclusive day range for the active preset; null for any time.
+  /// Inclusive day range for the active preset. Always set by the cubit
+  /// (defaults to today) — there is no "any time"/unbounded option.
   final DateTimeRange? dateRange;
   final List<Transaction> transactions;
   final String? errorMessage;
 
   bool get hasActiveFilter =>
-      filter != TransactionHistoryFilter.all || dateRange != null;
+      filter != TransactionHistoryFilter.all ||
+      datePreset != TransactionHistoryDatePreset.today;
 
   bool get isLoading => status == TransactionHistoryStatus.loading;
 
@@ -64,5 +60,12 @@ class TransactionHistoryState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [status, filter, datePreset, dateRange, transactions, errorMessage];
+  List<Object?> get props => [
+    status,
+    filter,
+    datePreset,
+    dateRange,
+    transactions,
+    errorMessage,
+  ];
 }

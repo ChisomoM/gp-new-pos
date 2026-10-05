@@ -110,8 +110,6 @@ String _dateLabel(
   TransactionHistoryDatePreset preset,
 ) {
   switch (preset) {
-    case TransactionHistoryDatePreset.anyTime:
-      return 'Any time';
     case TransactionHistoryDatePreset.today:
       return 'Today';
     case TransactionHistoryDatePreset.yesterday:

@@ -1,5 +1,6 @@
 import 'package:auth_repo/auth_repo.dart';
 import 'package:flutter/material.dart';
+import 'package:geepay_pos/branch_picker/branch_picker.dart';
 import 'package:geepay_pos/login/cubit/cubit.dart';
 import 'package:geepay_pos/login/widgets/login_body.dart';
 import 'package:geepay_pos/main/view/main_page.dart';
@@ -38,10 +39,20 @@ class LoginView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<LoginCubit, LoginState>(
       listener: (context, state) {
-        if (state.status == LoginStatus.success) {
-          Navigator.of(
-            context,
-          ).pushReplacement(MainPage.route());
+        switch (state.status) {
+          case LoginStatus.success:
+            Navigator.of(context).pushReplacement(MainPage.route());
+          case LoginStatus.needsBranchSelection:
+            Navigator.of(context).pushReplacement(
+              BranchPickerPage.route(
+                deviceId: state.deviceId!,
+                branches: state.branches,
+              ),
+            );
+          case LoginStatus.initial:
+          case LoginStatus.submitting:
+          case LoginStatus.failure:
+            break;
         }
       },
       child: const LoginBody(),

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth.dart';
 import 'package:geepay_pos/company_profile/company_profile.dart';
 import 'package:geepay_pos/printer_settings/view/printer_settings_page.dart';
+import 'package:geepay_pos/settings/widgets/kiosk_exit_dialog.dart';
 import 'package:geepay_pos/splash/view/splash_page.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 
@@ -147,8 +150,41 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
-class _AppVersionTile extends StatelessWidget {
+/// Tapping this tile repeatedly (7 times within 2 seconds, the common
+/// "tap version to unlock" convention) is the hidden entry point to exit
+/// kiosk mode -- deliberately not a visible button, see the kiosk-lock
+/// implementation plan.
+class _AppVersionTile extends StatefulWidget {
   const _AppVersionTile();
+
+  @override
+  State<_AppVersionTile> createState() => _AppVersionTileState();
+}
+
+class _AppVersionTileState extends State<_AppVersionTile> {
+  static const _tapsToUnlock = 7;
+  static const _tapWindow = Duration(seconds: 2);
+
+  int _tapCount = 0;
+  Timer? _resetTimer;
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _resetTimer?.cancel();
+    _tapCount++;
+    if (_tapCount < _tapsToUnlock) {
+      _resetTimer = Timer(_tapWindow, () => _tapCount = 0);
+      return;
+    }
+    _tapCount = 0;
+    final pin = context.read<AuthRepo>().kioskExitPin;
+    unawaited(showKioskExitDialog(context, expectedPin: pin));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +200,7 @@ class _AppVersionTile extends StatelessWidget {
           color: AppColors.textTertiary,
         ),
       ),
+      onTap: _handleTap,
     );
   }
 }
