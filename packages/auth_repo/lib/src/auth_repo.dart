@@ -64,6 +64,9 @@ class AuthRepo {
     _authUtils = AuthUtils(_net, _prefs, _isDev, _themeController);
 
     _progressSub = _net.uploadProgress.listen(_progressController.add);
+    _sessionExpiredSub = _net.sessionExpired.listen((_) {
+      unawaited(_handleSessionExpired());
+    });
   }
 
   final SharedPrefs _prefs;
@@ -87,6 +90,7 @@ class AuthRepo {
   late final AuthUtils _authUtils;
 
   late StreamSubscription<int> _progressSub;
+  late StreamSubscription<void> _sessionExpiredSub;
   final _controller = StreamController<AuthStatus>.broadcast();
   final _progressController = StreamController<int>.broadcast();
   final _themeController = StreamController<int>.broadcast();
@@ -117,6 +121,16 @@ class AuthRepo {
 
   /// Whether this device should be kiosk-locked on launch.
   Future<bool> isKioskModeEnabled() => _authCore.isKioskModeEnabled();
+
+  /// Records the outcome of the most recent kiosk-lock activation.
+  Future<void> setKioskStatus({
+    required String vendor,
+    required String summary,
+  }) =>
+      _authCore.setKioskStatus(vendor: vendor, summary: summary);
+
+  /// The most recent kiosk activation, or `null` if never activated.
+  Future<KioskStatus?> getKioskStatus() => _authCore.getKioskStatus();
 
   /// Terminal Type catalog for the Setup screen's picker, as `(id, name)`.
   Future<List<(String id, String name)>> getTerminalTypes() =>
@@ -233,5 +247,19 @@ class AuthRepo {
     _progressController.close();
     _themeController.close();
     _progressSub.cancel();
+    _sessionExpiredSub.cancel();
+  }
+
+  /// Reacts to [NetSource.sessionExpired] (any request coming back `401`)
+  /// by clearing the local session and emitting a distinct
+  /// [AuthStatus.expired] — kept separate from [AuthStatus.unauthenticated]
+  /// so the UI can tell "token died mid-session" apart from a deliberate
+  /// logout and show a message explaining why the user landed back on
+  /// Login (see `pos_mobile_app_endpoints.md`'s token-lifetime note: a
+  /// POS session has no refresh path, so expiry always means "log back
+  /// in", never "silently retry").
+  Future<void> _handleSessionExpired() async {
+    await _authCore.logOut();
+    _controller.add(AuthStatus.expired);
   }
 }

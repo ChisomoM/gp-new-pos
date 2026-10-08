@@ -1,4 +1,4 @@
-package com.example.verygoodcore.geepay_pos
+package com.geepay.geepay_pos
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,8 +14,19 @@ import android.content.Intent
  * native `SharedPreferences`.
  */
 class BootReceiver : BroadcastReceiver() {
+    companion object {
+        // Not a public Android constant -- a long-standing OEM convention
+        // some budget Chinese ROMs (this device's class included) broadcast
+        // instead of/alongside the standard BOOT_COMPLETED on a soft restart.
+        private const val ACTION_QUICKBOOT_POWERON = "android.intent.action.QUICKBOOT_POWERON"
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
+            intent.action != ACTION_QUICKBOOT_POWERON
+        ) {
+            return
+        }
 
         val launchIntent = Intent(context, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

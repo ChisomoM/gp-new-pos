@@ -55,6 +55,23 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Some budget OEM ROMs broadcast this instead of/alongside
+                     BOOT_COMPLETED on a soft restart; see BootReceiver.kt -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+        <!-- Required for device-owner provisioning (`dpm set-device-owner`),
+             which lets kiosk lock close the back+recents unpin gesture on
+             any vendor's hardware; see KioskDeviceAdminReceiver.kt -->
+        <receiver
+            android:name=".KioskDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
     </application>

@@ -59,7 +59,7 @@ class CollectionsCubit extends Cubit<CollectionsState> {
 
     emit(state.copyWith(isSubmitting: true, errorMessage: ''));
     final transactionRef = const Uuid().v4();
-    final deviceId = await _authRepo.getDeviceId();
+    final deviceId = await _authRepo.getPosDeviceId();
     final result = await _servicesRepo.collect(
       phoneNumber: phone,
       amount: amount,

@@ -89,7 +89,7 @@ class SetupCubit extends Cubit<SetupState> {
     if (isClosed) return;
     if (result.success) {
       await _authRepo.setKioskModeEnabled(enabled: true);
-      await KioskHelper.enterKiosk();
+      await KioskHelper.enterKiosk(_authRepo);
       if (isClosed) return;
     }
     emit(

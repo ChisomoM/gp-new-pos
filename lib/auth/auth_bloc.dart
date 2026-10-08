@@ -91,7 +91,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     var status = event.status;
     final user = await _tryGetUser();
     final appVersion = await repo.getAppVersion();
-    if (user == null) {
+    // AuthStatus.expired already implies "logged out due to a dead
+    // token" — don't collapse it into the generic unauthenticated status,
+    // or the UI loses the ability to tell that apart from a deliberate
+    // logout and show the right message.
+    if (user == null && status != AuthStatus.expired) {
       status = AuthStatus.unauthenticated;
     }
     if (user != null) {

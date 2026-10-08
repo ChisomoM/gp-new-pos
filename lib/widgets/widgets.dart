@@ -13,6 +13,7 @@ export 'empty_state.dart';
 export 'fade_indexed_stack.dart';
 export 'grouped_toolbar_card.dart';
 export 'key_value_list.dart';
+export 'kiosk_tap_gesture.dart';
 export 'list_group.dart';
 export 'money_text.dart';
 export 'placeholder_screen.dart';

@@ -25,7 +25,7 @@ class CashierSummaryCubit extends Cubit<CashierSummaryState> {
 
   Future<void> load() async {
     emit(state.copyWith(status: CashierSummaryStatus.loading));
-    final deviceId = await _authRepo.getDeviceId();
+    final deviceId = await _authRepo.getPosDeviceId();
     final result = await _servicesRepo.getTransactions(
       posDeviceId: deviceId,
       status: state.filter.apiValue,

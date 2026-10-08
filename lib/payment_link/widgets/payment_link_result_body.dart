@@ -1,11 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/auth/auth_bloc.dart';
 import 'package:geepay_pos/payment_link/cubit/cubit.dart';
+import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
+import 'package:geepay_pos/utils/print_helper.dart';
+import 'package:geepay_pos/utils/printer_dispatch.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 class PaymentLinkResultBody extends StatelessWidget {
   const PaymentLinkResultBody({super.key});
+
+  Future<void> _printReceipt(
+    BuildContext context,
+    PaymentLinkState state,
+  ) async {
+    final cashierName = context.read<AuthBloc>().state.user.name ?? '';
+    final receiptDetails = <String, dynamic>{
+      'businessName': 'Geepay',
+      'branchName': '',
+      'username': cashierName.isEmpty ? 'Cashier' : cashierName,
+      'amount': (state.amount ?? 0).toStringAsFixed(2),
+      'phone': '—',
+      'paymentChannel': 'Payment link',
+      'transactionId': state.token ?? '—',
+      'date': DateTime.now().toIso8601String(),
+      'status': state.isPaid ? 'successful' : 'failed',
+      'isReprint': 'false',
+      'reprintCount': '1',
+    };
+
+    await PrinterDispatch.run(
+      printBuiltin: () => PrintHelper.printReceipt(
+        receiptDetails.map((key, value) => MapEntry(key, value.toString())),
+      ),
+      printBluetooth: () => BluetoothPrinterHelper.printReceipt(receiptDetails),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +162,12 @@ class PaymentLinkResultBody extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpace.x3),
                       ],
+                      AppButton.secondary(
+                        label: 'Print receipt',
+                        icon: AppIcons.printer,
+                        onPressed: () => _printReceipt(context, state),
+                      ),
+                      const SizedBox(height: AppSpace.x3),
                       if (isPaid)
                         AppButton(
                           label: 'Done',

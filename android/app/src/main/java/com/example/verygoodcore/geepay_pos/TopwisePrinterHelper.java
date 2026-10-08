@@ -1,4 +1,4 @@
-package com.example.verygoodcore.geepay_pos;
+package com.geepay.geepay_pos;
 
 import android.content.Context;
 import android.graphics.Bitmap;

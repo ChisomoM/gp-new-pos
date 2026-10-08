@@ -16,7 +16,7 @@ void main() {
   setUp(() {
     services = _MockServicesRepo();
     auth = _MockAuthRepo();
-    when(auth.getDeviceId).thenAnswer((_) async => 'device-1');
+    when(auth.getPosDeviceId).thenAnswer((_) async => 'device-1');
     when(
       () => services.collect(
         phoneNumber: any(named: 'phoneNumber'),

@@ -31,7 +31,7 @@ Flutter (Dart)                                   Android (native)
 PrinterDispatch.run(...)
    │
    ├── printBuiltin() ──► PrintHelper.printReceipt()
-   │                         │  (MethodChannel: com.example.pos_mobile/print)
+   │                         │  (MethodChannel: com.geepay.pos_mobile/print)
    │                         ▼
    │                     MainActivity's channel handler
    │                         │
@@ -417,7 +417,7 @@ inline in `MainActivity.java` plus `PrinterHelper.java`.
 ### 3d. `android/app/src/main/java/com/example/pos_mobile/PrinterHelper.java`
 
 ```java
-package com.example.pos_mobile;
+package com.geepay.pos_mobile;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -702,7 +702,7 @@ binds to the vendor's own system service internally.
 ### 4a. `android/app/src/main/java/com/example/pos_mobile/TopwisePrinterHelper.java`
 
 ```java
-package com.example.pos_mobile;
+package com.geepay.pos_mobile;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -930,7 +930,7 @@ final class TopwisePrinterHelper {
 
 Both built-in backends are invoked from Dart through a single channel,
 `PrintHelper`, talking to a single native `MethodChannel` named
-`com.example.pos_mobile/print`, handled in `MainActivity.java`. Copy
+`com.geepay.pos_mobile/print`, handled in `MainActivity.java`. Copy
 `printerhepler.dart` if you want built-in printing callable from Dart at all
 (the Bluetooth path doesn't need it).
 
@@ -948,7 +948,7 @@ import 'package:pos_mobile/common/widgets/loaders/loaders.dart';
 class PrintHelper {
   static final deviceStorage = GetStorage();
 
-  static const platform = MethodChannel('com.example.pos_mobile/print');
+  static const platform = MethodChannel('com.geepay.pos_mobile/print');
 
   static Future<void> printReceipt({
     required String phone,
@@ -1041,7 +1041,7 @@ Add these imports:
 
 ```java
 import io.flutter.plugin.common.MethodChannel;
-import com.example.pos_mobile.PrinterHelper;
+import com.geepay.pos_mobile.PrinterHelper;
 import com.topwise.cloudpos.aidl.printer.AidlPrinter;
 import com.trendit.basesdk.POSDeviceManager;
 import com.trendit.basesdk.device.printer.OnPrintTaskListener;
@@ -1061,7 +1061,7 @@ import java.util.Map;
 Add these fields/constants to the `MainActivity` class:
 
 ```java
-private static final String PRINT_CHANNEL = "com.example.pos_mobile/print";
+private static final String PRINT_CHANNEL = "com.geepay.pos_mobile/print";
 
 private PrinterDevice printerDevice;
 private PrinterHelper printerHelper = new PrinterHelper(this); // Pass Activity context
@@ -1433,9 +1433,9 @@ For Topwise built-in printing:
 
 Glue (only if built-in printing is wanted from Dart):
 - [ ] `lib/utils/helpers/printerhepler.dart` (§5a)
-- [ ] The `PRINT_CHANNEL` (`com.example.pos_mobile/print`) `MethodChannel` setup in `MainActivity.java`, with its three method cases (§5b)
+- [ ] The `PRINT_CHANNEL` (`com.geepay.pos_mobile/print`) `MethodChannel` setup in `MainActivity.java`, with its three method cases (§5b)
 
 > Note: if the new project's Android package/applicationId differs from
-> `com.example.pos_mobile`, update the channel name string
-> (`"com.example.pos_mobile/print"`) consistently on both the Dart and Java
+> `com.geepay.pos_mobile`, update the channel name string
+> (`"com.geepay.pos_mobile/print"`) consistently on both the Dart and Java
 > sides, and place the Java files under the matching package folder.

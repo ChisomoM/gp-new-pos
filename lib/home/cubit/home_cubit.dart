@@ -18,7 +18,7 @@ class HomeCubit extends Cubit<HomeState> {
 
   Future<void> load() async {
     emit(state.copyWith(status: HomeStatus.loading));
-    final deviceId = await _authRepo.getDeviceId();
+    final deviceId = await _authRepo.getPosDeviceId();
     final result = await _servicesRepo.getTransactions(
       posDeviceId: deviceId,
       todayOnly: true,

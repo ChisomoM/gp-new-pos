@@ -168,24 +168,26 @@ class _LoginBodyState extends State<LoginBody> {
                         children: [
                           _loginStep(context, state),
                           const SizedBox(height: AppSpace.x6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                AppIcons.lock,
-                                size: AppIconSize.sm,
-                                color: AppColors.textMuted,
-                              ),
-                              const SizedBox(width: AppSpace.x1),
-                              Flexible(
-                                child: Text(
-                                  'Protected by Geepay Security Engine',
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.textTertiary,
+                          KioskTapGesture(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  AppIcons.lock,
+                                  size: AppIconSize.sm,
+                                  color: AppColors.textMuted,
+                                ),
+                                const SizedBox(width: AppSpace.x1),
+                                Flexible(
+                                  child: Text(
+                                    'Protected by Geepay Security Engine',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textTertiary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),

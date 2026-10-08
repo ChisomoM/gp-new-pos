@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Minimal, least-privilege policy set for KioskDeviceAdminReceiver.
+  Provisioning via `dpm set-device-owner` bypasses the interactive "Activate
+  this device admin app?" consent screen this file would otherwise drive, so
+  its content has little practical effect here; device-owner capability
+  comes from DevicePolicyManager API access, not from anything declared
+  below. Android still requires this resource to exist and be referenced
+  from the manifest's device_admin meta-data.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

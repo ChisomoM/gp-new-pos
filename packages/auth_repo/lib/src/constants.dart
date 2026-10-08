@@ -10,6 +10,9 @@ class AuthConstants {
   static const String keyDeviceId = 'device_id';
   static const String keyDeviceRegistered = 'device_registered';
   static const String keyKioskModeEnabled = 'kiosk_mode_enabled';
+  static const String keyKioskStatusVendor = 'kiosk_status_vendor';
+  static const String keyKioskStatusSummary = 'kiosk_status_summary';
+  static const String keyKioskStatusAt = 'kiosk_status_at';
 
   /// The real `gp_pos_tms` device id returned by `POST /v1/pos/register`
   /// (`data.device_id`) — distinct from [keyDeviceId], which is a locally

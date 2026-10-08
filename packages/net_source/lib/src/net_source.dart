@@ -84,6 +84,7 @@ class NetSource {
 
   final _controller = StreamController<int>();
   final _netState = StreamController<bool>();
+  final _sessionExpiredController = StreamController<void>.broadcast();
 
   /// Authentication status of user at any given point
   Stream<int> get uploadProgress async* {
@@ -95,6 +96,16 @@ class NetSource {
   Stream<bool> get hasNetConnection async* {
     yield false;
     yield* _netState.stream;
+  }
+
+  /// Fires whenever a request comes back `401` — the session token was
+  /// rejected (expired, revoked, or never valid). The auth layer listens
+  /// to this to log the user out automatically rather than leaving the
+  /// app stuck retrying with a dead token.
+  Stream<void> get sessionExpired => _sessionExpiredController.stream;
+
+  void _reportIfUnauthorized(int? statusCode) {
+    if (statusCode == 401) _sessionExpiredController.add(null);
   }
 
   /// Send GET request to [route] with optional [data] and query [params]
@@ -116,6 +127,7 @@ class NetSource {
         queryParameters: params,
       );
       log('Response @ $route: ${response.data}');
+      _reportIfUnauthorized(response.statusCode);
       return NetResponse.fromJson(response.data!);
     } catch (e) {
       log('Error @ $route: $e');
@@ -143,6 +155,7 @@ class NetSource {
         options: headers == null ? null : Options(headers: headers),
       );
       log('Response @ $route: ${response.data}');
+      _reportIfUnauthorized(response.statusCode);
       return NetResponse.fromJson(response.data as JsonMap);
     } catch (e) {
       log('Error @ $route: $e');
@@ -161,6 +174,7 @@ class NetSource {
       }
       final response = await _client.put<JsonMap>(route, data: body);
       log('Response @ $route: ${response.data}');
+      _reportIfUnauthorized(response.statusCode);
       return NetResponse.fromJson(response.data!);
     } catch (e) {
       log('Error @ $route: $e');

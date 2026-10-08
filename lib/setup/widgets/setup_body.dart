@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:auth_repo/auth_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/setup/cubit/cubit.dart';
+import 'package:geepay_pos/utils/kiosk_helper.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
 
 class SetupBody extends StatefulWidget {
@@ -206,6 +210,8 @@ class _SetupBodyState extends State<SetupBody> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: AppSpace.field),
+                    const _KioskControls(),
                     AnimatedAlert(
                       message: state.status == SetupStatus.failure
                           ? state.errorMessage
@@ -242,6 +248,46 @@ class _SetupBodyState extends State<SetupBody> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Manual kiosk-lock controls for this (pre-registration) screen, for
+/// provisioning/testing convenience -- no PIN gate, since this screen is
+/// only ever reachable on an unregistered device and is inherently an
+/// admin-only context already. "Lock" also persists the flag so it behaves
+/// like completing Setup normally would; "Unlock" is temporary, consistent
+/// with the hidden-gesture exit everywhere else (see the kiosk-lock
+/// implementation plan).
+class _KioskControls extends StatelessWidget {
+  const _KioskControls();
+
+  Future<void> _lock(BuildContext context) async {
+    final authRepo = context.read<AuthRepo>();
+    await authRepo.setKioskModeEnabled(enabled: true);
+    await KioskHelper.enterKiosk(authRepo);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: AppButton.secondary(
+            label: 'Lock device now',
+            size: AppButtonSize.md,
+            onPressed: () => unawaited(_lock(context)),
+          ),
+        ),
+        const SizedBox(width: AppSpace.x3),
+        Expanded(
+          child: AppButton.secondary(
+            label: 'Unlock device',
+            size: AppButtonSize.md,
+            onPressed: () => unawaited(KioskHelper.exitKiosk()),
+          ),
+        ),
+      ],
     );
   }
 }

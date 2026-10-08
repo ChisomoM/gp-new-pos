@@ -34,7 +34,7 @@ class SplashCubit extends Cubit<SplashState> {
     ).wait;
     if (isClosed) return;
     if (kioskEnabled) {
-      await KioskHelper.enterKiosk();
+      await KioskHelper.enterKiosk(_authRepo);
       if (isClosed) return;
     }
     emit(

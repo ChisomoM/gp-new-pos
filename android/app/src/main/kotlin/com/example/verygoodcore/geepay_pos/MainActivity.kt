@@ -1,4 +1,4 @@
-package com.example.verygoodcore.geepay_pos
+package com.geepay.geepay_pos
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -82,12 +82,14 @@ class MainActivity : FlutterActivity() {
                 try {
                     when (call.method) {
                         "enterKiosk" -> {
-                            kioskHelper.enterKiosk(this)
-                            result.success(null)
+                            result.success(kioskHelper.enterKiosk(this))
                         }
                         "exitKiosk" -> {
                             kioskHelper.exitKiosk(this)
                             result.success(null)
+                        }
+                        "isKioskActive" -> {
+                            result.success(kioskHelper.isKioskActive(this))
                         }
                         else -> result.notImplemented()
                     }

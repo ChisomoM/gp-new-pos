@@ -21,6 +21,11 @@ class AuthCore {
   static const String _keyLoggedIn = AuthConstants.keyLoggedIn;
   static const String _keyDeviceRegistered = AuthConstants.keyDeviceRegistered;
   static const String _keyKioskModeEnabled = AuthConstants.keyKioskModeEnabled;
+  static const String _keyKioskStatusVendor =
+      AuthConstants.keyKioskStatusVendor;
+  static const String _keyKioskStatusSummary =
+      AuthConstants.keyKioskStatusSummary;
+  static const String _keyKioskStatusAt = AuthConstants.keyKioskStatusAt;
   static const String _tblUsers = AuthConstants.tblUsers;
 
   Future<void> _initNetworkApi({String? token, String? refreshToken}) async {
@@ -89,15 +94,35 @@ class AuthCore {
   /// Both the `201` (new) and `409` (already registered — safe to treat as
   /// success on relaunch) responses carry `data.device_id`, which is
   /// persisted for the later `GET`/`PUT /v1/pos/devices/:id` calls.
+  ///
+  /// Seen in practice: the server has echoed the request's own
+  /// `finger_print` back under the `device_id` key instead of the real
+  /// server-assigned id — the same class of field mix-up already flagged
+  /// for Payment Link's `cashier_id`/`user_id` in
+  /// `pos_mobile_app_endpoints.md`. A real device id can never equal the
+  /// fingerprint we just sent (they're generated independently), so that
+  /// value is refused rather than persisted — better to keep whatever was
+  /// stored before (or nothing) than to silently poison every later call
+  /// that depends on this id, which is exactly what caused transaction
+  /// filtering to come up empty: the filter used the fingerprint, but
+  /// every transaction was actually tagged with the real device id.
   Future<OpStatus> registerDevice(JsonMap body) async {
     try {
       final response = await _net.post('v1/pos/register', body);
       if (response.isSuccessful()) {
         await _prefs.set(_keyDeviceRegistered, true);
         final data = response.data;
-        final deviceId = data is JsonMap ? data['device_id'] as String? : null;
-        if (deviceId != null) {
-          await _prefs.set(AuthConstants.keyPosDeviceId, deviceId);
+        final fingerprint = body['finger_print']?.toString();
+        final candidate = data is JsonMap
+            ? (data['device_id'] ?? data['id'])?.toString()
+            : null;
+        if (candidate != null && candidate != fingerprint) {
+          await _prefs.set(AuthConstants.keyPosDeviceId, candidate);
+        } else if (candidate != null) {
+          log(
+            'Register device: server returned the fingerprint as '
+            'device_id ($candidate) — refusing to persist it',
+          );
         }
       }
       return OpStatus.fromResponse(response);
@@ -116,8 +141,27 @@ class AuthCore {
 
   /// The `gp_pos_tms` device id returned by [registerDevice], or `null` if
   /// this device has never registered.
-  Future<String?> getPosDeviceId() =>
-      _prefs.getString(AuthConstants.keyPosDeviceId);
+  ///
+  /// Self-heals a device stuck with the fingerprint/device_id mix-up
+  /// described on [registerDevice]: a value that exactly matches this
+  /// device's local fingerprint can't be a real server-assigned id, so
+  /// it's cleared here rather than kept — every caller already treats
+  /// `null` as "this device's id/assignment isn't known yet" correctly
+  /// (skip the filter, skip branch resolution), which is a safe
+  /// degradation from the alternative of filtering forever against a
+  /// value no transaction will ever carry.
+  Future<String?> getPosDeviceId() async {
+    final stored = await _prefs.getString(AuthConstants.keyPosDeviceId);
+    if (stored == null) return null;
+    final fingerprint = await _prefs.getString(AuthConstants.keyDeviceId);
+    if (stored == fingerprint) {
+      log('pos_device_id was poisoned with the device fingerprint — '
+          'clearing it');
+      await _prefs.deleteValue(AuthConstants.keyPosDeviceId);
+      return null;
+    }
+    return stored;
+  }
 
   /// Persists whether this device should be kiosk-locked. Set to `true`
   /// right after a successful [registerDevice] call; checked on every app
@@ -131,6 +175,33 @@ class AuthCore {
   Future<bool> isKioskModeEnabled() async {
     return await _prefs.getBool(_keyKioskModeEnabled, defaultValue: false) ??
         false;
+  }
+
+  /// Records the outcome of the most recent kiosk-lock activation (see
+  /// `KioskHelper.enterKiosk`) -- which vendor hardware was detected and a
+  /// short pass/fail summary -- so it can be shown later (e.g. in the
+  /// kiosk-exit PIN dialog) instead of only appearing in a one-off snackbar.
+  Future<void> setKioskStatus({
+    required String vendor,
+    required String summary,
+  }) async {
+    await _prefs.set(_keyKioskStatusVendor, vendor);
+    await _prefs.set(_keyKioskStatusSummary, summary);
+    await _prefs.set(_keyKioskStatusAt, DateTime.now().toIso8601String());
+  }
+
+  /// The most recent kiosk activation recorded by [setKioskStatus], or
+  /// `null` if kiosk mode has never been activated on this device.
+  Future<KioskStatus?> getKioskStatus() async {
+    final vendor = await _prefs.getString(_keyKioskStatusVendor);
+    final summary = await _prefs.getString(_keyKioskStatusSummary);
+    final at = await _prefs.getString(_keyKioskStatusAt);
+    if (vendor == null || summary == null || at == null) return null;
+    return KioskStatus(
+      vendor: vendor,
+      summary: summary,
+      activatedAt: DateTime.tryParse(at),
+    );
   }
 
   /// Public catalog for the Setup screen's Terminal Type picker
