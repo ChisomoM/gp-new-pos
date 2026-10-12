@@ -18,6 +18,8 @@ class CollectionsState extends Equatable {
     this.resultTransaction,
     this.pollAttempts = 0,
     this.isSubmitting = false,
+    this.resolvedName,
+    this.isLookingUpName = false,
   });
 
   final CollectionsStep step;
@@ -30,6 +32,14 @@ class CollectionsState extends Equatable {
   final int pollAttempts;
   final bool isSubmitting;
 
+  /// The account name resolved for [phoneNumber] via the name-lookup route
+  /// (`pos_mobile_app_endpoints.md` §3a) — shown as a confidence check
+  /// before the cashier confirms the amount. Null means "not resolved",
+  /// which is never treated as an error: the lookup is a convenience, not
+  /// a requirement, and never blocks [CollectionsCubit.submit].
+  final String? resolvedName;
+  final bool isLookingUpName;
+
   CollectionsState copyWith({
     CollectionsStep? step,
     String? phoneNumber,
@@ -40,6 +50,8 @@ class CollectionsState extends Equatable {
     Transaction? resultTransaction,
     int? pollAttempts,
     bool? isSubmitting,
+    Object? resolvedName = _unset,
+    bool? isLookingUpName,
   }) {
     return CollectionsState(
       step: step ?? this.step,
@@ -51,6 +63,10 @@ class CollectionsState extends Equatable {
       resultTransaction: resultTransaction ?? this.resultTransaction,
       pollAttempts: pollAttempts ?? this.pollAttempts,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      resolvedName: identical(resolvedName, _unset)
+          ? this.resolvedName
+          : resolvedName as String?,
+      isLookingUpName: isLookingUpName ?? this.isLookingUpName,
     );
   }
 
@@ -65,5 +81,7 @@ class CollectionsState extends Equatable {
     resultTransaction,
     pollAttempts,
     isSubmitting,
+    resolvedName,
+    isLookingUpName,
   ];
 }

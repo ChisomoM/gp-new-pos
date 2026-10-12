@@ -149,6 +149,12 @@ class _Hero extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Image.asset(
+                    AppLogos.wordmarkWhite,
+                    width: 100,
+                    semanticLabel: 'Geepay',
+                  ),
+                  const SizedBox(height: AppSpace.x5),
                   Text(
                     _greeting(),
                     style: AppTextStyles.body.copyWith(

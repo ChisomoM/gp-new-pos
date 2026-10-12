@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
 import 'package:geepay_pos/auth/auth_bloc.dart';
+import 'package:geepay_pos/export/export.dart';
 import 'package:geepay_pos/models/transaction.dart';
 import 'package:geepay_pos/transaction_details/cubit/cubit.dart';
 import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
@@ -186,6 +187,20 @@ class _Footer extends StatelessWidget {
 
   final Transaction transaction;
 
+  Future<void> _shareReceipt(BuildContext context) {
+    return showExportSheet(
+      context,
+      onPdf: () => TransactionExport.transactionsToPdf(
+        title: 'Receipt',
+        transactions: [transaction],
+      ),
+      onExcel: () => TransactionExport.transactionsToExcel(
+        title: 'Receipt',
+        transactions: [transaction],
+      ),
+    );
+  }
+
   Future<void> _printReceipt(BuildContext context) async {
     final tx = transaction;
     final cashierName = context.read<AuthBloc>().state.user.name ?? '';
@@ -239,10 +254,7 @@ class _Footer extends StatelessWidget {
                 tooltip: 'Share receipt',
                 variant: AppIconButtonVariant.outline,
                 size: AppSize.buttonLg,
-                onPressed: () => showToast(
-                  context,
-                  message: 'Sharing receipts is coming soon',
-                ),
+                onPressed: () => _shareReceipt(context),
               ),
               const SizedBox(width: AppSpace.x3),
               Expanded(

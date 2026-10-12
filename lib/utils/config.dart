@@ -27,7 +27,7 @@ class Config {
     dbName: 'geepay.pos.dev.db',
     initScript: initialScript,
     migrations: migrationScript,
-    kioskExitPin: '0000',
+    kioskExitPin: '4123',
   );
 
   /// Creates a staging config
@@ -39,7 +39,7 @@ class Config {
     dbName: 'geepay.pos.stg.db',
     initScript: initialScript,
     migrations: migrationScript,
-    kioskExitPin: '0000',
+    kioskExitPin: '4123',
   );
 
   /// Creates a production config
@@ -51,7 +51,7 @@ class Config {
     dbName: 'geepay.pos.db',
     initScript: initialScript,
     migrations: migrationScript,
-    kioskExitPin: '0000',
+    kioskExitPin: '4123',
   );
 
   /// A description for baseUrl

@@ -4,6 +4,8 @@ enum CashierSummaryStatus { initial, loading, success, failure }
 
 enum CashierSummaryFilter { all, successful, failed, pending }
 
+enum CashierSummaryDatePreset { today, yesterday, last7Days, custom }
+
 extension on CashierSummaryFilter {
   String? get apiValue => switch (this) {
     CashierSummaryFilter.all => null,
@@ -28,12 +30,19 @@ class CashierSummaryState extends Equatable {
   const CashierSummaryState({
     this.status = CashierSummaryStatus.initial,
     this.filter = CashierSummaryFilter.all,
+    this.datePreset = CashierSummaryDatePreset.today,
+    this.dateRange,
     this.summary,
     this.errorMessage,
   });
 
   final CashierSummaryStatus status;
   final CashierSummaryFilter filter;
+  final CashierSummaryDatePreset datePreset;
+
+  /// Inclusive day range for the active preset. Always set by the cubit
+  /// (defaults to today) — there is no "any time"/unbounded option.
+  final DateTimeRange? dateRange;
   final TransactionList? summary;
   final String? errorMessage;
 
@@ -42,17 +51,28 @@ class CashierSummaryState extends Equatable {
   CashierSummaryState copyWith({
     CashierSummaryStatus? status,
     CashierSummaryFilter? filter,
+    CashierSummaryDatePreset? datePreset,
+    DateTimeRange? Function()? dateRange,
     TransactionList? summary,
     String? errorMessage,
   }) {
     return CashierSummaryState(
       status: status ?? this.status,
       filter: filter ?? this.filter,
+      datePreset: datePreset ?? this.datePreset,
+      dateRange: dateRange != null ? dateRange() : this.dateRange,
       summary: summary ?? this.summary,
       errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, filter, summary, errorMessage];
+  List<Object?> get props => [
+    status,
+    filter,
+    datePreset,
+    dateRange,
+    summary,
+    errorMessage,
+  ];
 }

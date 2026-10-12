@@ -49,6 +49,11 @@ class _CollectionsBodyState extends State<CollectionsBody> {
                       prefixIcon: AppIcons.phone,
                       onChanged: cubit.setPhoneNumber,
                     ),
+                    AnimatedSize(
+                      duration: AppMotion.of(context, AppMotion.fast),
+                      alignment: Alignment.topLeft,
+                      child: _NameLookupRow(state: state),
+                    ),
                     const SizedBox(height: AppSpace.section),
                     AppTextField(
                       label: 'Amount',
@@ -213,6 +218,66 @@ class _CollectionsBodyState extends State<CollectionsBody> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Shows the result of the name lookup triggered as the cashier finishes
+/// typing a phone number (`pos_mobile_app_endpoints.md` §3a) — a loading
+/// row while in flight, the resolved account name on success, or nothing
+/// at all otherwise (an unresolved/failed lookup is silent; it's a
+/// confidence check, not a requirement to submit).
+class _NameLookupRow extends StatelessWidget {
+  const _NameLookupRow({required this.state});
+
+  final CollectionsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isLookingUpName) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpace.x2),
+        child: Row(
+          children: [
+            const SizedBox.square(
+              dimension: AppIconSize.sm,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: AppSpace.x2),
+            Text(
+              'Looking up name...',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final name = state.resolvedName;
+    if (name == null) return const SizedBox(width: double.infinity);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.x2),
+      child: Row(
+        children: [
+          const Icon(
+            AppIcons.successFilled,
+            size: AppIconSize.sm,
+            color: AppColors.successText,
+          ),
+          const SizedBox(width: AppSpace.x2),
+          Flexible(
+            child: Text(
+              name,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.successText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

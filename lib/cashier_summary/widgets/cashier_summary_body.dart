@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:geepay_pos/app/theme/design_system.dart';
+import 'package:geepay_pos/auth/auth_bloc.dart';
 import 'package:geepay_pos/cashier_summary/cubit/cubit.dart';
 import 'package:geepay_pos/export/export.dart';
+import 'package:geepay_pos/models/transaction.dart';
+import 'package:geepay_pos/utils/bluetooth_printer_helper.dart';
+import 'package:geepay_pos/utils/print_helper.dart';
+import 'package:geepay_pos/utils/printer_dispatch.dart';
 import 'package:geepay_pos/widgets/widgets.dart';
+import 'package:intl/intl.dart';
 
 /// Builds the export totals from the loaded summary — the same figures
 /// [_Content] renders, kept in one place so the header export action and
@@ -12,7 +18,7 @@ SummaryExportData? _exportData(CashierSummaryState state) {
   if (transactions == null || transactions.isEmpty) return null;
   final showBreakdown = state.filter == CashierSummaryFilter.all;
   return SummaryExportData(
-    periodLabel: 'Today',
+    periodLabel: _dateLabel(state),
     filterLabel: state.filter.label,
     currency: state.summary!.currency,
     totalAmount: transactions.fold<double>(0, (s, t) => s + t.amount),
@@ -83,11 +89,8 @@ class CashierSummaryBody extends StatelessWidget {
                       Row(
                         children: [
                           _FilterTrigger(
-                            label: 'Today',
-                            onTap: () => showToast(
-                              context,
-                              message: 'Custom date ranges are coming soon',
-                            ),
+                            label: _dateLabel(state),
+                            onTap: () => _pickDateRange(context, cubit, state),
                           ),
                           const SizedBox(width: AppSpace.x2),
                           _FilterTrigger(
@@ -100,7 +103,10 @@ class CashierSummaryBody extends StatelessWidget {
                       AnimatedSwitcher(
                         duration: AppMotion.of(context, AppMotion.base),
                         child: _Content(
-                          key: ValueKey('${state.status}-${state.filter}'),
+                          key: ValueKey(
+                            '${state.status}-${state.filter}-'
+                            '${state.dateRange}',
+                          ),
                           state: state,
                         ),
                       ),
@@ -109,7 +115,7 @@ class CashierSummaryBody extends StatelessWidget {
                 ),
               ),
             ),
-            const _Footer(),
+            _Footer(summary: state.summary),
           ],
         );
       },
@@ -146,6 +152,69 @@ class CashierSummaryBody extends StatelessWidget {
     );
     if (selected != null) await cubit.setFilter(selected);
   }
+
+  Future<void> _pickDateRange(
+    BuildContext context,
+    CashierSummaryCubit cubit,
+    CashierSummaryState state,
+  ) async {
+    final selected = await showAppSheet<CashierSummaryDatePreset>(
+      context,
+      title: 'Filter by date',
+      child: ListGroup(
+        children: [
+          for (final preset in CashierSummaryDatePreset.values)
+            AppListTile(
+              title: _presetLabel(preset),
+              leading: Icon(
+                preset == state.datePreset
+                    ? AppIcons.successFilled
+                    : AppIcons.chevronRight,
+                size: AppIconSize.md,
+                color: preset == state.datePreset
+                    ? AppColors.gpCobalt
+                    : Colors.transparent,
+              ),
+              showChevron: false,
+              onTap: () => Navigator.of(context).pop(preset),
+            ),
+        ],
+      ),
+    );
+    if (selected == null || !context.mounted) return;
+    if (selected != CashierSummaryDatePreset.custom) {
+      await cubit.setDatePreset(selected);
+      return;
+    }
+
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 3),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: state.datePreset == CashierSummaryDatePreset.custom
+          ? state.dateRange
+          : null,
+    );
+    if (picked != null) await cubit.setCustomDateRange(picked);
+  }
+}
+
+String _presetLabel(CashierSummaryDatePreset preset) => switch (preset) {
+  CashierSummaryDatePreset.today => 'Today',
+  CashierSummaryDatePreset.yesterday => 'Yesterday',
+  CashierSummaryDatePreset.last7Days => 'Last 7 days',
+  CashierSummaryDatePreset.custom => 'Custom range',
+};
+
+String _dateLabel(CashierSummaryState state) {
+  if (state.datePreset != CashierSummaryDatePreset.custom) {
+    return _presetLabel(state.datePreset);
+  }
+  final range = state.dateRange;
+  if (range == null) return 'Custom range';
+  final fmt = DateFormat('d MMM');
+  return '${fmt.format(range.start)} - ${fmt.format(range.end)}';
 }
 
 /// Bordered dropdown-style trigger for the date/status pickers, matching
@@ -450,10 +519,41 @@ class _SummarySkeleton extends StatelessWidget {
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer();
+  const _Footer({required this.summary});
+
+  final TransactionList? summary;
+
+  Future<void> _printSummary(BuildContext context) async {
+    final transactions = summary?.transactions ?? const [];
+    if (transactions.isEmpty) return;
+
+    final cashierName = context.read<AuthBloc>().state.user.name ?? '';
+    final rows = [
+      for (final t in transactions)
+        <String, dynamic>{
+          'businessName': 'Geepay',
+          'cashier': cashierName.isEmpty ? 'Cashier' : cashierName,
+          'transactionId': t.lookupId,
+          'amount': t.amount.toStringAsFixed(2),
+          'network': t.channelLabel,
+          'status': t.status,
+          'date': t.processedAt == null
+              ? ''
+              : DateFormat('MMM d, y, h:mm a').format(t.processedAt!),
+        },
+    ];
+
+    await PrinterDispatch.run(
+      printBuiltin: () => PrintHelper.printDailySummary(
+        rows.map((r) => r.map((k, v) => MapEntry(k, v.toString()))).toList(),
+      ),
+      printBluetooth: () => BluetoothPrinterHelper.printDailySummary(rows),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasTransactions = (summary?.transactions ?? const []).isNotEmpty;
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: AppColors.surfaceWhite,
@@ -471,10 +571,7 @@ class _Footer extends StatelessWidget {
           child: AppButton(
             label: 'Print summary',
             icon: AppIcons.printer,
-            onPressed: () {
-              // TODO(anyone): wire to a working printer integration.
-              showToast(context, message: 'Printing is coming soon');
-            },
+            onPressed: hasTransactions ? () => _printSummary(context) : null,
           ),
         ),
       ),

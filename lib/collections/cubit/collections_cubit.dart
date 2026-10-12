@@ -21,9 +21,11 @@ class CollectionsCubit extends Cubit<CollectionsState> {
   final ServicesRepo _servicesRepo;
   final AuthRepo _authRepo;
   Timer? _pollTimer;
+  Timer? _lookupDebounce;
 
   static const _pollInterval = Duration(seconds: 10);
   static const _maxPollAttempts = 30; // ~5 minutes at a 10s interval.
+  static const _lookupDebounceDelay = Duration(milliseconds: 600);
 
   void pickAmount(int amount) {
     emit(state.copyWith(amount: amount.toDouble()));
@@ -37,8 +39,52 @@ class CollectionsCubit extends Cubit<CollectionsState> {
     emit(state.copyWith(amount: double.tryParse(text.trim())));
   }
 
+  /// Local numbers (e.g. 0973042237) get the country prefix; numbers
+  /// already in international form (e.g. 260973042237) are sent as is.
+  /// Returns null until the result is a plausible full number, so a
+  /// lookup never fires on a number the cashier is still typing.
+  String? _normalizedPhone() {
+    final input = state.phoneNumber.trim();
+    if (input.isEmpty) return null;
+    final phone = input.length > 10 ? input : '26$input';
+    return phone.length == 12 ? phone : null;
+  }
+
   void setPhoneNumber(String phoneNumber) {
-    emit(state.copyWith(phoneNumber: phoneNumber));
+    emit(
+      state.copyWith(
+        phoneNumber: phoneNumber,
+        resolvedName: null,
+        isLookingUpName: false,
+      ),
+    );
+    _lookupDebounce?.cancel();
+    final phone = _normalizedPhone();
+    if (phone == null) return;
+    _lookupDebounce = Timer(_lookupDebounceDelay, () => _lookupName(phone));
+  }
+
+  /// Name lookup (`pos_mobile_app_endpoints.md` §3a) — shows the resolved
+  /// account name before the cashier confirms the amount, as a confidence
+  /// check. A failed/unresolved lookup is silent: it's a convenience, not
+  /// a requirement, and the cashier can still submit without a name.
+  Future<void> _lookupName(String phone) async {
+    emit(state.copyWith(isLookingUpName: true));
+    final result = await _servicesRepo.nameLookup(phone);
+    if (isClosed) return;
+    // The cashier may have kept typing while this was in flight — only
+    // apply a result that still matches the current phone number.
+    if (_normalizedPhone() != phone) return;
+    final data = result.data;
+    final name = result.success && data is Map
+        ? data['names']?.toString().trim()
+        : null;
+    emit(
+      state.copyWith(
+        isLookingUpName: false,
+        resolvedName: (name?.isNotEmpty ?? false) ? name : null,
+      ),
+    );
   }
 
   Future<void> submit() async {
@@ -127,6 +173,7 @@ class CollectionsCubit extends Cubit<CollectionsState> {
   /// Cancels an in-flight request and returns the flow to the form step.
   void cancel() {
     _pollTimer?.cancel();
+    _lookupDebounce?.cancel();
     emit(const CollectionsState());
   }
 
@@ -134,12 +181,14 @@ class CollectionsCubit extends Cubit<CollectionsState> {
   /// from the previous attempt.
   void reset() {
     _pollTimer?.cancel();
+    _lookupDebounce?.cancel();
     emit(const CollectionsState());
   }
 
   @override
   Future<void> close() {
     _pollTimer?.cancel();
+    _lookupDebounce?.cancel();
     return super.close();
   }
 }
